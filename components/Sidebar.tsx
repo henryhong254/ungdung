@@ -20,7 +20,7 @@ export default function Sidebar() {
   const items = nav.filter(item => item.roles.includes(role));
 
   const isActive = (href: string) =>
-    href === "/" ? pathname === "/" : pathname.startsWith(href);
+    href === "/" ? pathname === "/" : pathname === href || (pathname.startsWith(href + "/") && href !== "/time");
 
   return (
     <>
