@@ -4,8 +4,11 @@ import type { NextRequest } from "next/server";
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  const isAuthPage = pathname === "/login" || pathname === "/polaris/login";
-  const isApiRoute = pathname.startsWith("/api/");
+  // Only handle /polaris/* routes
+  if (!pathname.startsWith("/polaris")) return NextResponse.next();
+
+  const isAuthPage = pathname === "/polaris/login";
+  const isApiRoute = pathname.startsWith("/polaris/api/") || pathname.startsWith("/api/");
 
   if (isApiRoute) return NextResponse.next();
 
