@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { useSession } from "next-auth/react";
 import { STATUSES, WORK_TYPES, WORK_TYPE_COLORS } from "@/lib/constants";
 import { api } from "@/lib/api";
 
@@ -24,13 +25,15 @@ function fmtMin(min: number) {
 
 function WeekSummaryWidget() {
   const [summary, setSummary] = useState<WeekSummary | null>(null);
+  const { status } = useSession();
 
   useEffect(() => {
+    if (status !== "authenticated") return;
     api("/api/summary/week").then(r => {
       if (!r.ok) return;
       return r.json();
     }).then(data => { if (data) setSummary(data); });
-  }, []);
+  }, [status]);
 
   const now = new Date();
   const mon = new Date(now);
@@ -163,6 +166,8 @@ function IdeaWidget() {
   const [ideas, setIdeas] = useState<Idea[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const { status } = useSession();
+
   async function loadIdeas() {
     const res = await api("/api/ideas?unscheduled=true");
     if (!res.ok) return;
@@ -170,7 +175,7 @@ function IdeaWidget() {
     setIdeas(Array.isArray(data) ? data : []);
   }
 
-  useEffect(() => { loadIdeas(); }, []);
+  useEffect(() => { if (status === "authenticated") loadIdeas(); }, [status]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -270,13 +275,21 @@ function IdeaWidget() {
 
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
+  const { status } = useSession();
 
   useEffect(() => {
+    if (status === "unauthenticated") {
+      window.location.href = "/polaris/login";
+    }
+  }, [status]);
+
+  useEffect(() => {
+    if (status !== "authenticated") return;
     api("/api/dashboard").then(r => {
       if (!r.ok) return;
       return r.json();
     }).then(data => { if (data) setData(data); });
-  }, []);
+  }, [status]);
 
   if (!data) return (
     <div className="max-w-4xl mx-auto space-y-6">
