@@ -14,6 +14,12 @@ export default function TeamPage() {
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
 
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [editForm, setEditForm] = useState({ name: "", role: "", password: "" });
+  const [editShowPw, setEditShowPw] = useState(false);
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState("");
+
   const load = useCallback(async () => {
     const r = await api("/api/users");
     if (r.ok) {
@@ -49,6 +55,42 @@ export default function TeamPage() {
     setShowForm(false);
     setShowPw(false);
     setForm({ name: "", email: "", password: "", role: "assistant" });
+    await load();
+  }
+
+  function openEdit(u: User) {
+    setEditingUser(u);
+    setEditForm({ name: u.name, role: u.role, password: "" });
+    setEditError("");
+    setEditShowPw(false);
+  }
+
+  async function handleEdit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingUser) return;
+    setEditSaving(true);
+    setEditError("");
+    try {
+      const body: Record<string, string> = { name: editForm.name, role: editForm.role };
+      if (editForm.password) body.password = editForm.password;
+      const res = await api(`/api/users/${editingUser.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setEditError(data.error || `Lỗi ${res.status}`);
+        setEditSaving(false);
+        return;
+      }
+    } catch {
+      setEditError("Không kết nối được server");
+      setEditSaving(false);
+      return;
+    }
+    setEditSaving(false);
+    setEditingUser(null);
     await load();
   }
 
@@ -106,7 +148,10 @@ export default function TeamPage() {
                     {u.active ? "Hoạt động" : "Vô hiệu"}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-right">
+                <td className="px-4 py-3 text-right flex items-center justify-end gap-2">
+                  <button onClick={() => openEdit(u)} className="text-xs text-blue-500 hover:text-blue-700 border border-blue-200 px-2 py-1 rounded">
+                    Sửa
+                  </button>
                   <button onClick={() => toggleActive(u)} className="text-xs text-gray-400 hover:text-gray-700 border border-gray-200 px-2 py-1 rounded">
                     {u.active ? "Vô hiệu hoá" : "Kích hoạt"}
                   </button>
@@ -117,6 +162,7 @@ export default function TeamPage() {
         </table>
       </div>
 
+      {/* Modal thêm thành viên */}
       {showForm && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowForm(false)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6" onClick={(e) => e.stopPropagation()}>
@@ -134,11 +180,7 @@ export default function TeamPage() {
                 <label className="text-xs text-gray-500 block mb-1">Mật khẩu *</label>
                 <div className="relative">
                   <input required type={showPw ? "text" : "password"} className="w-full border rounded-lg px-3 py-2 pr-14 text-sm" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
-                  <button
-                    type="button"
-                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowPw((v) => !v); }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-blue-600 hover:text-blue-800 px-2 py-1 cursor-pointer select-none"
-                  >
+                  <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowPw((v) => !v); }} className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-blue-600 hover:text-blue-800 px-2 py-1 cursor-pointer select-none">
                     {showPw ? "Ẩn" : "Hiện"}
                   </button>
                 </div>
@@ -154,6 +196,47 @@ export default function TeamPage() {
                 <button type="button" onClick={() => setShowForm(false)} className="flex-1 border border-gray-200 rounded-lg py-2 text-sm hover:bg-gray-50">Hủy</button>
                 <button type="submit" disabled={saving} className="flex-1 bg-blue-600 text-white rounded-lg py-2 text-sm hover:bg-blue-700 disabled:opacity-50">
                   {saving ? "Đang lưu..." : "Tạo tài khoản"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal sửa thành viên */}
+      {editingUser && (
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setEditingUser(null)}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6" onClick={(e) => e.stopPropagation()}>
+            <h2 className="font-semibold mb-4">Sửa thành viên</h2>
+            <form onSubmit={handleEdit} className="space-y-3">
+              <div>
+                <label className="text-xs text-gray-500 block mb-1">Tên *</label>
+                <input required className="w-full border rounded-lg px-3 py-2 text-sm" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 block mb-1">Email</label>
+                <input disabled className="w-full border rounded-lg px-3 py-2 text-sm bg-gray-50 text-gray-400" value={editingUser.email} />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 block mb-1">Role</label>
+                <select className="w-full border rounded-lg px-3 py-2 text-sm" value={editForm.role} onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}>
+                  {ROLES.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 block mb-1">Mật khẩu mới (để trống nếu không đổi)</label>
+                <div className="relative">
+                  <input type={editShowPw ? "text" : "password"} className="w-full border rounded-lg px-3 py-2 pr-14 text-sm" value={editForm.password} onChange={(e) => setEditForm({ ...editForm, password: e.target.value })} />
+                  <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditShowPw((v) => !v); }} className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-blue-600 hover:text-blue-800 px-2 py-1 cursor-pointer select-none">
+                    {editShowPw ? "Ẩn" : "Hiện"}
+                  </button>
+                </div>
+              </div>
+              {editError && <p className="text-xs text-red-500">{editError}</p>}
+              <div className="flex gap-2 pt-2">
+                <button type="button" onClick={() => setEditingUser(null)} className="flex-1 border border-gray-200 rounded-lg py-2 text-sm hover:bg-gray-50">Hủy</button>
+                <button type="submit" disabled={editSaving} className="flex-1 bg-blue-600 text-white rounded-lg py-2 text-sm hover:bg-blue-700 disabled:opacity-50">
+                  {editSaving ? "Đang lưu..." : "Lưu thay đổi"}
                 </button>
               </div>
             </form>
