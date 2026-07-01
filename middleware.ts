@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { getToken } from "next-auth/jwt";
 
-export function middleware(req: NextRequest) {
+export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // Only handle /polaris/* routes
@@ -12,21 +13,26 @@ export function middleware(req: NextRequest) {
 
   if (isApiRoute) return NextResponse.next();
 
-  const hasSession =
-    req.cookies.has("authjs.session-token") ||
-    req.cookies.has("next-auth.session-token") ||
-    req.cookies.has("__Secure-authjs.session-token") ||
-    req.cookies.has("__Secure-next-auth.session-token");
+  const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || req.nextUrl.host;
+  const proto = req.headers.get("x-forwarded-proto") || "https";
 
-  if (!hasSession && !isAuthPage) {
-    const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || req.nextUrl.host;
-    const proto = req.headers.get("x-forwarded-proto") || "https";
+  // Validate JWT properly instead of just checking cookie existence
+  const cookieName = proto === "https"
+    ? "__Secure-authjs.session-token"
+    : "authjs.session-token";
+
+  let token = await getToken({ req, secret: process.env.AUTH_SECRET, cookieName });
+  if (!token?.sub) {
+    token = await getToken({ req, secret: process.env.AUTH_SECRET });
+  }
+
+  const hasValidSession = !!token?.sub;
+
+  if (!hasValidSession && !isAuthPage) {
     return NextResponse.redirect(`${proto}://${host}/polaris/login`);
   }
 
-  if (hasSession && isAuthPage) {
-    const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || req.nextUrl.host;
-    const proto = req.headers.get("x-forwarded-proto") || "https";
+  if (hasValidSession && isAuthPage) {
     return NextResponse.redirect(`${proto}://${host}/polaris`);
   }
 

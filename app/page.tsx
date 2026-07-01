@@ -162,8 +162,9 @@ function IdeaWidget() {
 
   async function loadIdeas() {
     const res = await api("/api/ideas?unscheduled=true");
+    if (!res.ok) return;
     const data = await res.json();
-    setIdeas(data || []);
+    setIdeas(Array.isArray(data) ? data : []);
   }
 
   useEffect(() => { loadIdeas(); }, []);
