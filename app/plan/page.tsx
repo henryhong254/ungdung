@@ -52,18 +52,20 @@ export default function PlanPage() {
   const weekDays = getWeekDays(weekOffset);
   const [mobileTab, setMobileTab] = useState<"ideas" | "week">("ideas");
 
-  // Filters — mặc định lọc theo người đang đăng nhập
   const currentUserId = (session?.user as any)?.id || "";
   const [search, setSearch] = useState("");
   const [filterWorkType, setFilterWorkType] = useState("");
-  const [filterUserId, setFilterUserId] = useState(currentUserId);
+  // Expert mặc định thấy tất cả (""), assistant luôn locked theo mình
+  const [filterUserId, setFilterUserId] = useState("");
   const [filterDone, setFilterDone] = useState<"all" | "todo" | "done">("all");
-  const hasFilter = !!(search || filterWorkType || filterUserId !== currentUserId || filterDone !== "all");
+  const hasFilter = !!(search || filterWorkType || (isExpert && filterUserId) || filterDone !== "all");
 
   function matchesFilter(item: { title: string; workType: string | null; done: boolean; assignedTo: User | null }) {
     if (search && !item.title.toLowerCase().includes(search.toLowerCase())) return false;
     if (filterWorkType && item.workType !== filterWorkType) return false;
-    if (filterUserId && item.assignedTo?.id !== filterUserId) return false;
+    // Assistant: always filter to self; Expert: filter only if a specific user is selected
+    const effectiveUserId = isExpert ? filterUserId : currentUserId;
+    if (effectiveUserId && item.assignedTo?.id !== effectiveUserId) return false;
     if (filterDone === "todo" && item.done) return false;
     if (filterDone === "done" && !item.done) return false;
     return true;
@@ -196,10 +198,9 @@ export default function PlanPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  // Khi session load xong, set filter + task form mặc định theo user hiện tại
+  // Khi session load xong, set task form mặc định theo user hiện tại
   useEffect(() => {
     if (currentUserId) {
-      if (filterUserId === "") setFilterUserId(currentUserId);
       setTaskForm(f => f.assignedToId === "" ? { ...f, assignedToId: currentUserId } : f);
     }
   }, [currentUserId]);
@@ -437,13 +438,13 @@ export default function PlanPage() {
           <option value="">Loại CV</option>
           {WORK_TYPES.map(w => <option key={w.value} value={w.value}>{w.label}</option>)}
         </select>
-        {users.length > 1 && (
+        {isExpert && users.length > 1 && (
           <select
             value={filterUserId}
             onChange={e => setFilterUserId(e.target.value)}
             className={`border rounded-lg px-2.5 py-1.5 text-sm outline-none ${filterUserId ? "border-blue-300 bg-blue-50 text-blue-700" : "border-gray-200"}`}
           >
-            <option value="">Người làm</option>
+            <option value="">Tất cả mọi người</option>
             {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
           </select>
         )}
@@ -458,7 +459,7 @@ export default function PlanPage() {
         </select>
         {hasFilter && (
           <button
-            onClick={() => { setSearch(""); setFilterWorkType(""); setFilterUserId(currentUserId); setFilterDone("all"); }}
+            onClick={() => { setSearch(""); setFilterWorkType(""); setFilterUserId(""); setFilterDone("all"); }}
             className="text-xs text-gray-400 hover:text-gray-600 px-2"
           >
             Xóa lọc
