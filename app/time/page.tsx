@@ -74,8 +74,8 @@ export default function TodayPage() {
   const load = useCallback(() => {
     const todayStr = new Date().toISOString().slice(0, 10);
     Promise.all([
-      api(`/api/ideas?from=${todayStr}&to=${todayStr}`).then(r => r.ok ? r.json() : []),
-      api(`/api/tasks?from=${todayStr}&to=${todayStr}`).then(r => r.ok ? r.json() : []),
+      api(`/api/ideas?from=${todayStr}&to=${todayStr}&mine=true`).then(r => r.ok ? r.json() : []),
+      api(`/api/tasks?from=${todayStr}&to=${todayStr}&mine=true`).then(r => r.ok ? r.json() : []),
       api("/api/time").then(r => r.ok ? r.json() : []),
     ]).then(([i, t, e]) => {
       setIdeas(i || []);
