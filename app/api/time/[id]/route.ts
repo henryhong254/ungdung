@@ -13,12 +13,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const stoppedAt = new Date();
-  const durationMin = Math.round((stoppedAt.getTime() - entry.startedAt.getTime()) / 60000);
+  let startedAt = entry.startedAt;
+  let stoppedAt = body.stoppedAt ? new Date(body.stoppedAt) : (entry.stoppedAt ?? new Date());
+  if (body.startedAt) startedAt = new Date(body.startedAt);
+
+  const durationMin = Math.round((stoppedAt.getTime() - startedAt.getTime()) / 60000);
 
   const updated = await prisma.timeEntry.update({
     where: { id },
-    data: { stoppedAt, durationMin, note: body.note ?? entry.note },
+    data: { startedAt, stoppedAt, durationMin, note: body.note ?? entry.note },
   });
   return NextResponse.json(updated);
 }

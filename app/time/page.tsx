@@ -64,6 +64,10 @@ export default function TodayPage() {
   const [showStopForm, setShowStopForm] = useState(false);
   const [stopNote, setStopNote] = useState("");
   const [stoppingId, setStoppingId] = useState<string | null>(null);
+  const [editEntry, setEditEntry] = useState<TimeEntry | null>(null);
+  const [editStart, setEditStart] = useState("");
+  const [editEnd, setEditEnd] = useState("");
+  const [editNote, setEditNote] = useState("");
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const today = new Date().toISOString().slice(0, 10);
 
@@ -160,6 +164,33 @@ export default function TodayPage() {
     load();
   }
 
+  function openEdit(entry: TimeEntry) {
+    const toLocal = (iso: string) => {
+      const d = new Date(iso);
+      d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+      return d.toISOString().slice(0, 16);
+    };
+    setEditEntry(entry);
+    setEditStart(toLocal(entry.startedAt));
+    setEditEnd(entry.stoppedAt ? toLocal(entry.stoppedAt) : "");
+    setEditNote(entry.note || "");
+  }
+
+  async function saveEdit() {
+    if (!editEntry) return;
+    await api(`/api/time/${editEntry.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        startedAt: new Date(editStart).toISOString(),
+        stoppedAt: editEnd ? new Date(editEnd).toISOString() : undefined,
+        note: editNote || undefined,
+      }),
+    });
+    setEditEntry(null);
+    load();
+  }
+
   const todayEntries = entries.filter(e => {
     return new Date(e.startedAt).toDateString() === new Date().toDateString();
   });
@@ -228,6 +259,42 @@ export default function TodayPage() {
               </button>
               <button onClick={confirmStop} className="flex-1 bg-red-500 text-white rounded-xl py-3 text-sm font-medium hover:bg-red-600 active:bg-red-700">
                 Xác nhận dừng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit entry modal */}
+      {editEntry && (
+        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/40" onClick={() => setEditEntry(null)}>
+          <div className="bg-white w-full md:max-w-sm rounded-t-2xl md:rounded-2xl p-5 space-y-4" onClick={e => e.stopPropagation()}>
+            <div className="md:hidden w-10 h-1 bg-gray-200 rounded-full mx-auto" />
+            <p className="font-semibold text-gray-800">Chỉnh sửa thời gian</p>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs text-gray-500 block mb-1">Bắt đầu</label>
+                <input type="datetime-local" value={editStart} onChange={e => setEditStart(e.target.value)}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-400" />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 block mb-1">Kết thúc</label>
+                <input type="datetime-local" value={editEnd} onChange={e => setEditEnd(e.target.value)}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-400" />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 block mb-1">Ghi chú</label>
+                <input type="text" value={editNote} onChange={e => setEditNote(e.target.value)}
+                  placeholder="Đã làm gì..."
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-400" />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => setEditEntry(null)} className="flex-1 border border-gray-200 rounded-xl py-3 text-sm font-medium text-gray-600 hover:bg-gray-50">
+                Hủy
+              </button>
+              <button onClick={saveEdit} className="flex-1 bg-blue-600 text-white rounded-xl py-3 text-sm font-medium hover:bg-blue-700">
+                Lưu
               </button>
             </div>
           </div>
@@ -346,9 +413,12 @@ export default function TodayPage() {
                     <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-600 rounded-full font-medium">Đang chạy</span>
                   )}
                 </div>
-                {e.stoppedAt && (
-                  <button onClick={() => deleteEntry(e.id)} className="text-gray-300 active:text-red-400 text-sm w-6 h-6 flex items-center justify-center touch-manipulation">✕</button>
-                )}
+                <div className="flex items-center gap-1 shrink-0">
+                  <button onClick={() => openEdit(e)} className="text-gray-300 hover:text-blue-400 active:text-blue-500 text-sm w-6 h-6 flex items-center justify-center touch-manipulation" title="Chỉnh sửa">✎</button>
+                  {e.stoppedAt && (
+                    <button onClick={() => deleteEntry(e.id)} className="text-gray-300 active:text-red-400 text-sm w-6 h-6 flex items-center justify-center touch-manipulation">✕</button>
+                  )}
+                </div>
               </div>
             );
           })}
