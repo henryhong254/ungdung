@@ -16,13 +16,11 @@ export function middleware(req: NextRequest) {
     req.cookies.has("__Secure-next-auth.session-token");
 
   if (!hasSession && !isAuthPage) {
-    const base = process.env.NEXTAUTH_URL || req.nextUrl.origin;
-    return NextResponse.redirect(new URL("/polaris/login", base));
+    return NextResponse.redirect(new URL("/polaris/login", req.nextUrl.origin));
   }
 
   if (hasSession && isAuthPage) {
-    const base = process.env.NEXTAUTH_URL || req.nextUrl.origin;
-    return NextResponse.redirect(new URL("/polaris", base));
+    return NextResponse.redirect(new URL("/polaris", req.nextUrl.origin));
   }
 
   return NextResponse.next();
