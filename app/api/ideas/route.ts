@@ -1,21 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
+import { getSession } from "@/lib/session";
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const user = await getSession(req);
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { searchParams } = new URL(req.url);
     const from = searchParams.get("from");
     const to = searchParams.get("to");
     const unscheduled = searchParams.get("unscheduled") === "true";
-    const isExpert = (session.user as any).role === "expert";
+    const isExpert = user.role === "expert";
 
     const ideas = await prisma.idea.findMany({
       where: {
-        assignedToId: isExpert ? undefined : session.user.id,
+        assignedToId: isExpert ? undefined : user.id,
         scheduledFor: unscheduled
           ? null
           : from || to
@@ -34,12 +34,12 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const user = await getSession(req);
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const body = await req.json();
     const idea = await prisma.idea.create({
       data: {
-        createdById: session.user.id,
+        createdById: user.id,
         title: body.title,
         description: body.description || null,
         product: body.product || null,

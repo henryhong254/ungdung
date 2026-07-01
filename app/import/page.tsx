@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { PRODUCTS, PRODUCT_TYPES } from "@/lib/constants";
+import { api } from "@/lib/api";
 
 const APPS_SCRIPT = `// Dán code này vào Google Apps Script của Sheet
 // Extensions → Apps Script → paste → Save → Run
@@ -53,7 +54,7 @@ export default function ImportPage() {
     setLoading(true);
     const rows = parseCsv(csvText);
     if (!rows.length) { alert("Không đọc được dữ liệu. Kiểm tra lại định dạng CSV."); setLoading(false); return; }
-    const res = await fetch("/api/customers/import", {
+    const res = await api("/api/customers/import", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ rows, product, productType }),

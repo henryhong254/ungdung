@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { STATUSES, WORK_TYPES, WORK_TYPE_COLORS } from "@/lib/constants";
+import { api } from "@/lib/api";
 
 interface WeekSummary {
   weekStart: string;
@@ -25,7 +26,7 @@ function WeekSummaryWidget() {
   const [summary, setSummary] = useState<WeekSummary | null>(null);
 
   useEffect(() => {
-    fetch("/api/summary/week").then(r => r.json()).then(setSummary);
+    api("/api/summary/week").then(r => r.json()).then(setSummary);
   }, []);
 
   const now = new Date();
@@ -160,7 +161,7 @@ function IdeaWidget() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   async function loadIdeas() {
-    const res = await fetch("/api/ideas?unscheduled=true");
+    const res = await api("/api/ideas?unscheduled=true");
     const data = await res.json();
     setIdeas(data || []);
   }
@@ -171,7 +172,7 @@ function IdeaWidget() {
     e.preventDefault();
     if (!title.trim()) return;
     setSaving(true);
-    await fetch("/api/ideas", {
+    await api("/api/ideas", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title: title.trim(), workType: workType || null }),
@@ -184,7 +185,7 @@ function IdeaWidget() {
   }
 
   async function deleteIdea(id: string) {
-    await fetch(`/api/ideas/${id}`, { method: "DELETE" });
+    await api(`/api/ideas/${id}`, { method: "DELETE" });
     setIdeas(prev => prev.filter(i => i.id !== id));
   }
 
@@ -267,7 +268,7 @@ export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
 
   useEffect(() => {
-    fetch("/api/dashboard").then((r) => r.json()).then(setData);
+    api("/api/dashboard").then((r) => r.json()).then(setData);
   }, []);
 
   if (!data) return (

@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { WORK_TYPES, WORK_TYPE_COLORS } from "@/lib/constants";
+import { api } from "@/lib/api";
 
 interface TimeEntry {
   id: string;
@@ -69,9 +70,9 @@ export default function TodayPage() {
   const load = useCallback(() => {
     const todayStr = new Date().toISOString().slice(0, 10);
     Promise.all([
-      fetch(`/api/ideas?from=${todayStr}&to=${todayStr}`).then(r => r.ok ? r.json() : []),
-      fetch(`/api/tasks?from=${todayStr}&to=${todayStr}`).then(r => r.ok ? r.json() : []),
-      fetch("/api/time").then(r => r.ok ? r.json() : []),
+      api(`/api/ideas?from=${todayStr}&to=${todayStr}`).then(r => r.ok ? r.json() : []),
+      api(`/api/tasks?from=${todayStr}&to=${todayStr}`).then(r => r.ok ? r.json() : []),
+      api("/api/time").then(r => r.ok ? r.json() : []),
     ]).then(([i, t, e]) => {
       setIdeas(i || []);
       setTasks(t || []);
@@ -102,11 +103,11 @@ export default function TodayPage() {
   async function startTimer(workType: string, ideaId?: string, title?: string) {
     if (running) {
       // stop current first
-      await fetch(`/api/time/${running.id}`, {
+      await api(`/api/time/${running.id}`, {
         method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}),
       });
     }
-    await fetch("/api/time", {
+    await api("/api/time", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         product: "Chung (không gắn sản phẩm)",
@@ -121,7 +122,7 @@ export default function TodayPage() {
 
   async function confirmStop() {
     if (!stoppingId) return;
-    await fetch(`/api/time/${stoppingId}`, {
+    await api(`/api/time/${stoppingId}`, {
       method: "PATCH", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ note: stopNote || undefined }),
     });
@@ -139,7 +140,7 @@ export default function TodayPage() {
   }
 
   async function toggleIdea(idea: Idea) {
-    await fetch(`/api/ideas/${idea.id}`, {
+    await api(`/api/ideas/${idea.id}`, {
       method: "PATCH", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ done: !idea.done }),
     });
@@ -147,7 +148,7 @@ export default function TodayPage() {
   }
 
   async function toggleTask(task: Task) {
-    await fetch(`/api/tasks/${task.id}`, {
+    await api(`/api/tasks/${task.id}`, {
       method: "PATCH", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ done: !task.done }),
     });
@@ -155,7 +156,7 @@ export default function TodayPage() {
   }
 
   async function deleteEntry(id: string) {
-    await fetch(`/api/time/${id}`, { method: "DELETE" });
+    await api(`/api/time/${id}`, { method: "DELETE" });
     load();
   }
 

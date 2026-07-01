@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { ROLES } from "@/lib/constants";
+import { api } from "@/lib/api";
 
 interface User { id: string; name: string; email: string; role: string; active: boolean; }
 
@@ -11,9 +12,14 @@ export default function TeamPage() {
   const [form, setForm] = useState({ name: "", email: "", password: "", role: "assistant" });
   const [showPw, setShowPw] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState("");
 
-  const load = useCallback(() => {
-    fetch("/api/users").then((r) => r.json()).then(setUsers);
+  const load = useCallback(async () => {
+    const r = await api("/api/users");
+    if (r.ok) {
+      const data = await r.json();
+      if (Array.isArray(data)) setUsers(data);
+    }
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -21,19 +27,33 @@ export default function TeamPage() {
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
-    await fetch("/api/users", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
+    setFormError("");
+    try {
+      const res = await api("/api/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setFormError(data.error || `Lỗi ${res.status}, vui lòng thử lại`);
+        setSaving(false);
+        return;
+      }
+    } catch {
+      setFormError("Không kết nối được server");
+      setSaving(false);
+      return;
+    }
     setSaving(false);
     setShowForm(false);
+    setShowPw(false);
     setForm({ name: "", email: "", password: "", role: "assistant" });
-    load();
+    await load();
   }
 
   async function toggleActive(u: User) {
-    await fetch(`/api/users/${u.id}`, {
+    await api(`/api/users/${u.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ active: !u.active }),
@@ -45,7 +65,7 @@ export default function TeamPage() {
     <div className="max-w-2xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Quản lý team</h1>
-        <button onClick={() => setShowForm(true)} className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+        <button onClick={() => { setShowForm(true); setFormError(""); setShowPw(false); }} className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">
           + Thêm thành viên
         </button>
       </div>
@@ -113,8 +133,12 @@ export default function TeamPage() {
               <div>
                 <label className="text-xs text-gray-500 block mb-1">Mật khẩu *</label>
                 <div className="relative">
-                  <input required type={showPw ? "text" : "password"} className="w-full border rounded-lg px-3 py-2 pr-10 text-sm" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
-                  <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs">
+                  <input required type={showPw ? "text" : "password"} className="w-full border rounded-lg px-3 py-2 pr-14 text-sm" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+                  <button
+                    type="button"
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowPw((v) => !v); }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-blue-600 hover:text-blue-800 px-2 py-1 cursor-pointer select-none"
+                  >
                     {showPw ? "Ẩn" : "Hiện"}
                   </button>
                 </div>
@@ -125,6 +149,7 @@ export default function TeamPage() {
                   {ROLES.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
                 </select>
               </div>
+              {formError && <p className="text-xs text-red-500">{formError}</p>}
               <div className="flex gap-2 pt-2">
                 <button type="button" onClick={() => setShowForm(false)} className="flex-1 border border-gray-200 rounded-lg py-2 text-sm hover:bg-gray-50">Hủy</button>
                 <button type="submit" disabled={saving} className="flex-1 bg-blue-600 text-white rounded-lg py-2 text-sm hover:bg-blue-700 disabled:opacity-50">

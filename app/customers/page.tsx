@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { STATUSES, SEGMENTS, SOURCES } from "@/lib/constants";
+import { api } from "@/lib/api";
 
 interface Customer {
   id: string;
@@ -49,7 +50,7 @@ export default function CustomersPage() {
     if (search) params.set("search", search);
     if (status) params.set("status", status);
     if (segment) params.set("segment", segment);
-    fetch(`/api/customers?${params}`).then((r) => r.json()).then(setCustomers);
+    api(`/api/customers?${params}`).then((r) => r.json()).then(setCustomers);
   }, [search, status, segment]);
 
   useEffect(() => { load(); }, [load]);
@@ -57,7 +58,7 @@ export default function CustomersPage() {
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
-    await fetch("/api/customers", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
+    await api("/api/customers", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
     setSaving(false);
     setShowForm(false);
     setForm({ name: "", phone: "", email: "", occupation: "", source: "", initialProblem: "" });
@@ -65,7 +66,7 @@ export default function CustomersPage() {
   }
 
   async function handleExport() {
-    const res = await fetch("/api/customers/export");
+    const res = await api("/api/customers/export");
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");

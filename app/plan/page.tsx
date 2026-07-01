@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { WORK_TYPES, WORK_TYPE_COLORS, ALL_PRODUCTS } from "@/lib/constants";
 import { useSession } from "next-auth/react";
+import { api } from "@/lib/api";
 
 interface User { id: string; name: string; }
 
@@ -102,7 +103,7 @@ export default function PlanPage() {
   const timerInterval = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const loadTimer = useCallback(() => {
-    return fetch("/api/time")
+    return api("/api/time")
       .then(r => r.ok ? r.json() : Promise.reject(r.status))
       .then((data: TimerEntry[]) => {
         const active = data.find((e: any) => !e.stoppedAt);
@@ -134,7 +135,7 @@ export default function PlanPage() {
   }
 
   async function startTimer(workType?: string) {
-    await fetch("/api/time", {
+    await api("/api/time", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ product: timerForm.product, workType: workType || timerForm.workType || WORK_TYPES[0].value, note: timerForm.note || null }),
     });
@@ -145,7 +146,7 @@ export default function PlanPage() {
 
   async function stopTimer() {
     if (!timerRunning) return;
-    await fetch(`/api/time/${timerRunning.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) });
+    await api(`/api/time/${timerRunning.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) });
     loadTimer();
   }
 
@@ -157,10 +158,10 @@ export default function PlanPage() {
   async function startTimerForIdea(workType: string, ideaId?: string, note?: string) {
     // Stop existing timer first
     if (timerRunning) {
-      await fetch(`/api/time/${timerRunning.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) });
+      await api(`/api/time/${timerRunning.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) });
     }
     const wt = workType || WORK_TYPES[0].value;
-    const res = await fetch("/api/time", {
+    const res = await api("/api/time", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         product: timerForm.product || "Chung (không gắn sản phẩm)",
@@ -182,10 +183,10 @@ export default function PlanPage() {
     const from = isoDate(days[0]);
     const to = isoDate(days[6]);
     Promise.all([
-      fetch(`/api/ideas?unscheduled=true`).then(r => r.json()),
-      fetch(`/api/ideas?from=${from}&to=${to}`).then(r => r.json()),
-      fetch(`/api/tasks?from=${from}&to=${to}`).then(r => r.json()),
-      fetch("/api/users").then(r => r.json()),
+      api(`/api/ideas?unscheduled=true`).then(r => r.json()),
+      api(`/api/ideas?from=${from}&to=${to}`).then(r => r.json()),
+      api(`/api/tasks?from=${from}&to=${to}`).then(r => r.json()),
+      api("/api/users").then(r => r.json()),
     ]).then(([unscheduled, scheduled, t, u]) => {
       setIdeas([...(unscheduled || []), ...(scheduled || [])]);
       setTasks(t || []);
@@ -206,7 +207,7 @@ export default function PlanPage() {
   // ---- Ideas ----
   async function addIdea(e: React.FormEvent) {
     e.preventDefault();
-    await fetch("/api/ideas", {
+    await api("/api/ideas", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...ideaForm, workType: ideaForm.workType || null }),
     });
@@ -231,7 +232,7 @@ export default function PlanPage() {
     if (!editingIdea) return;
     setSavingEditIdea(true); setEditIdeaError("");
     try {
-      const res = await fetch(`/api/ideas/${editingIdea.id}`, {
+      const res = await api(`/api/ideas/${editingIdea.id}`, {
         method: "PATCH", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: editIdeaForm.title,
@@ -247,7 +248,7 @@ export default function PlanPage() {
   }
 
   async function toggleIdeaDone(idea: Idea) {
-    await fetch(`/api/ideas/${idea.id}`, {
+    await api(`/api/ideas/${idea.id}`, {
       method: "PATCH", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ done: !idea.done }),
     });
@@ -255,12 +256,12 @@ export default function PlanPage() {
   }
 
   async function deleteIdea(id: string) {
-    await fetch(`/api/ideas/${id}`, { method: "DELETE" });
+    await api(`/api/ideas/${id}`, { method: "DELETE" });
     setEditingIdea(null); load();
   }
 
   async function scheduleIdea(ideaId: string, date: string | null, assignedToId?: string) {
-    await fetch(`/api/ideas/${ideaId}`, {
+    await api(`/api/ideas/${ideaId}`, {
       method: "PATCH", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ scheduledFor: date, assignedToId: assignedToId ?? undefined }),
     });
@@ -273,7 +274,7 @@ export default function PlanPage() {
     if (!showTaskForm) return;
     setSavingTask(true); setTaskError("");
     try {
-      const res = await fetch("/api/tasks", {
+      const res = await api("/api/tasks", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...taskForm, scheduledFor: showTaskForm }),
       });
@@ -299,7 +300,7 @@ export default function PlanPage() {
     if (!editingTask) return;
     setSavingEditTask(true); setEditTaskError("");
     try {
-      const res = await fetch(`/api/tasks/${editingTask.id}`, {
+      const res = await api(`/api/tasks/${editingTask.id}`, {
         method: "PATCH", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: editTaskForm.title,
@@ -315,7 +316,7 @@ export default function PlanPage() {
   }
 
   async function toggleTaskDone(task: Task) {
-    await fetch(`/api/tasks/${task.id}`, {
+    await api(`/api/tasks/${task.id}`, {
       method: "PATCH", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ done: !task.done }),
     });
@@ -323,12 +324,12 @@ export default function PlanPage() {
   }
 
   async function deleteTask(id: string) {
-    await fetch(`/api/tasks/${id}`, { method: "DELETE" });
+    await api(`/api/tasks/${id}`, { method: "DELETE" });
     setEditingTask(null); load();
   }
 
   async function scheduleTask(taskId: string, date: string, assignedToId?: string) {
-    await fetch(`/api/tasks/${taskId}`, {
+    await api(`/api/tasks/${taskId}`, {
       method: "PATCH", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ scheduledFor: date, assignedToId: assignedToId ?? undefined }),
     });

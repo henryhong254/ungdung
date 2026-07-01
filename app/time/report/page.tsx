@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { WORK_TYPES } from "@/lib/constants";
+import { api } from "@/lib/api";
 
 interface Stats {
   totalMinutes: number;
@@ -30,7 +31,7 @@ export default function TimeReportPage() {
 
   const load = useCallback(() => {
     const from = new Date(Date.now() - Number(range) * 86400000).toISOString();
-    fetch(`/api/time/stats?from=${from}`).then((r) => r.json()).then(setStats);
+    api(`/api/time/stats?from=${from}`).then((r) => r.json()).then(setStats);
   }, [range]);
 
   useEffect(() => { load(); }, [load]);

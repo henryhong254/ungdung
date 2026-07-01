@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { STATUSES, SEGMENTS, SOURCES, PRODUCTS, PRODUCT_TYPES, COACHING_FIELDS, B2B_FIELDS } from "@/lib/constants";
+import { api } from "@/lib/api";
 
 interface Purchase { id: string; product: string; productType: string; amount: number; purchasedAt: string; }
 interface Profile { id: string; productType: string; data: string; createdAt: string; }
@@ -39,7 +40,7 @@ export default function CustomerDetailPage() {
   const [savingProfile, setSavingProfile] = useState<string | null>(null);
 
   const load = useCallback(() => {
-    fetch(`/api/customers/${id}`).then((r) => r.json()).then((c: Customer) => {
+    api(`/api/customers/${id}`).then((r) => r.json()).then((c: Customer) => {
       setCustomer(c);
       setEditForm(c);
       const pf: Record<string, Record<string, string>> = {};
@@ -53,7 +54,7 @@ export default function CustomerDetailPage() {
   useEffect(() => { load(); }, [load]);
 
   async function saveEdit() {
-    await fetch(`/api/customers/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(editForm) });
+    await api(`/api/customers/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(editForm) });
     setEditing(false);
     load();
   }
@@ -62,21 +63,21 @@ export default function CustomerDetailPage() {
     e.preventDefault();
     if (!noteText.trim()) return;
     setSavingNote(true);
-    await fetch(`/api/customers/${id}/notes`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ content: noteText }) });
+    await api(`/api/customers/${id}/notes`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ content: noteText }) });
     setNoteText("");
     setSavingNote(false);
     load();
   }
 
   async function deleteNote(noteId: string) {
-    await fetch(`/api/customers/${id}/notes?noteId=${noteId}`, { method: "DELETE" });
+    await api(`/api/customers/${id}/notes?noteId=${noteId}`, { method: "DELETE" });
     load();
   }
 
   async function addPurchase(e: React.FormEvent) {
     e.preventDefault();
     const selected = PRODUCTS.find((p) => p.value === purchaseForm.product);
-    await fetch(`/api/customers/${id}/purchases`, {
+    await api(`/api/customers/${id}/purchases`, {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...purchaseForm, productType: selected?.type || purchaseForm.productType }),
     });
@@ -86,13 +87,13 @@ export default function CustomerDetailPage() {
   }
 
   async function deletePurchase(purchaseId: string) {
-    await fetch(`/api/customers/${id}/purchases?purchaseId=${purchaseId}`, { method: "DELETE" });
+    await api(`/api/customers/${id}/purchases?purchaseId=${purchaseId}`, { method: "DELETE" });
     load();
   }
 
   async function saveProfile(productType: string) {
     setSavingProfile(productType);
-    await fetch(`/api/customers/${id}/profiles`, {
+    await api(`/api/customers/${id}/profiles`, {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ productType, data: profileForms[productType] || {} }),
     });
@@ -102,7 +103,7 @@ export default function CustomerDetailPage() {
 
   async function deleteCustomer() {
     if (!confirm("Xóa khách hàng này?")) return;
-    await fetch(`/api/customers/${id}`, { method: "DELETE" });
+    await api(`/api/customers/${id}`, { method: "DELETE" });
     router.push("/customers");
   }
 

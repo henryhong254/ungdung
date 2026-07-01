@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
+import { getSession } from "@/lib/session";
 
 export async function GET(req: NextRequest) {
-  const session = await auth();
-  if (!session || (session.user as any).role !== "expert") {
+  const user = await getSession(req);
+  if (!user || user.role !== "expert") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -17,26 +17,22 @@ export async function GET(req: NextRequest) {
     include: { user: { select: { name: true, role: true } } },
   });
 
-  // Tổng giờ theo sản phẩm
   const byProduct: Record<string, number> = {};
   for (const e of entries) {
     byProduct[e.product] = (byProduct[e.product] || 0) + (e.durationMin || 0);
   }
 
-  // Tổng giờ theo loại công việc
   const byWorkType: Record<string, number> = {};
   for (const e of entries) {
     byWorkType[e.workType] = (byWorkType[e.workType] || 0) + (e.durationMin || 0);
   }
 
-  // Tổng giờ theo người
   const byUser: Record<string, { name: string; minutes: number }> = {};
   for (const e of entries) {
     if (!byUser[e.userId]) byUser[e.userId] = { name: e.user.name, minutes: 0 };
     byUser[e.userId].minutes += e.durationMin || 0;
   }
 
-  // Tổng giờ theo ngày (7 ngày gần nhất)
   const byDay: Record<string, number> = {};
   for (const e of entries) {
     const day = new Date(e.startedAt).toISOString().slice(0, 10);
