@@ -26,7 +26,10 @@ function WeekSummaryWidget() {
   const [summary, setSummary] = useState<WeekSummary | null>(null);
 
   useEffect(() => {
-    api("/api/summary/week").then(r => r.json()).then(setSummary);
+    api("/api/summary/week").then(r => {
+      if (!r.ok) return;
+      return r.json();
+    }).then(data => { if (data) setSummary(data); });
   }, []);
 
   const now = new Date();
@@ -35,8 +38,8 @@ function WeekSummaryWidget() {
   const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
   const weekLabel = `${mon.getDate()}/${mon.getMonth() + 1} — ${sun.getDate()}/${sun.getMonth() + 1}`;
 
-  const totalItems = (summary?.ideas.scheduled ?? 0) + (summary?.tasks.scheduled ?? 0);
-  const doneItems = (summary?.ideas.done ?? 0) + (summary?.tasks.done ?? 0);
+  const totalItems = (summary?.ideas?.scheduled ?? 0) + (summary?.tasks?.scheduled ?? 0);
+  const doneItems = (summary?.ideas?.done ?? 0) + (summary?.tasks?.done ?? 0);
   const pct = totalItems > 0 ? Math.round((doneItems / totalItems) * 100) : 0;
 
   return (
@@ -269,7 +272,10 @@ export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
 
   useEffect(() => {
-    api("/api/dashboard").then((r) => r.json()).then(setData);
+    api("/api/dashboard").then(r => {
+      if (!r.ok) return;
+      return r.json();
+    }).then(data => { if (data) setData(data); });
   }, []);
 
   if (!data) return (
