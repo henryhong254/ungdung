@@ -3,7 +3,9 @@ import type { NextRequest } from "next/server";
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  console.log("[MW]", pathname, req.cookies.size);
+
+  // Bỏ qua static files
+  if (pathname.startsWith("/_next/") || pathname.includes(".")) return NextResponse.next();
 
   const isAuthPage = pathname === "/login" || pathname === "/polaris/login";
   const isApiRoute = pathname.startsWith("/api/");
