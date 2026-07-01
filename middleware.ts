@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { getToken } from "next-auth/jwt";
 
-export async function middleware(req: NextRequest) {
-  const token = await getToken({ req, secret: process.env.AUTH_SECRET });
+export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   const isAuthPage = pathname === "/login" || pathname === "/polaris/login";
@@ -11,14 +9,21 @@ export async function middleware(req: NextRequest) {
 
   if (isApiRoute) return NextResponse.next();
 
-  if (!token && !isAuthPage) {
+  // NextAuth v5 có thể dùng các tên cookie khác nhau
+  const hasSession =
+    req.cookies.has("authjs.session-token") ||
+    req.cookies.has("next-auth.session-token") ||
+    req.cookies.has("__Secure-authjs.session-token") ||
+    req.cookies.has("__Secure-next-auth.session-token");
+
+  if (!hasSession && !isAuthPage) {
     const base = process.env.NEXTAUTH_URL || req.nextUrl.origin;
-    const loginUrl = new URL("/polaris/login", base);
-    return NextResponse.redirect(loginUrl);
+    return NextResponse.redirect(new URL("/polaris/login", base));
   }
 
-  if (token && isAuthPage) {
-    return NextResponse.redirect(new URL("/polaris", req.nextUrl.origin));
+  if (hasSession && isAuthPage) {
+    const base = process.env.NEXTAUTH_URL || req.nextUrl.origin;
+    return NextResponse.redirect(new URL("/polaris", base));
   }
 
   return NextResponse.next();
