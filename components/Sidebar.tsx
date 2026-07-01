@@ -27,7 +27,7 @@ export default function Sidebar() {
       {/* Desktop sidebar */}
       <aside className="hidden md:flex w-52 flex-col py-6 px-3 shrink-0" style={{ background: "var(--bg-surface)", borderRight: "1px solid var(--border-dark)" }}>
         <div className="px-3 mb-8">
-          <span className="font-semibold text-base tracking-tight" style={{ color: "var(--gold)" }}>CRM</span>
+          <span className="font-semibold text-base tracking-tight" style={{ color: "var(--gold)" }}>Polaris</span>
         </div>
         <nav className="flex flex-col gap-0.5 flex-1">
           {items.map(item => {

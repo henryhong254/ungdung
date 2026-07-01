@@ -29,7 +29,7 @@ export default function LoginPage() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <div className="bg-white rounded-2xl border border-gray-200 p-8 w-full max-w-sm">
         <h1 className="text-xl font-semibold mb-1">Đăng nhập</h1>
-        <p className="text-sm text-gray-500 mb-6">CRM</p>
+        <p className="text-sm text-gray-500 mb-6">Polaris</p>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="text-xs text-gray-500 block mb-1">Email</label>

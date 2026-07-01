@@ -7,7 +7,7 @@ import Providers from "@/components/Providers";
 const geist = Geist({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "CRM",
+  title: "Polaris",
   description: "Quản lý khách hàng",
 };
 
