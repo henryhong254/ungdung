@@ -4,9 +4,6 @@ import type { NextRequest } from "next/server";
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Bỏ qua static files
-  if (pathname.startsWith("/_next/") || pathname.includes(".")) return NextResponse.next();
-
   const isAuthPage = pathname === "/login" || pathname === "/polaris/login";
   const isApiRoute = pathname.startsWith("/api/");
 
@@ -20,7 +17,6 @@ export function middleware(req: NextRequest) {
 
   if (!hasSession && !isAuthPage) {
     const base = process.env.NEXTAUTH_URL || req.nextUrl.origin;
-    console.log("[MW] redirecting to login, base:", base);
     return NextResponse.redirect(new URL("/polaris/login", base));
   }
 
@@ -31,3 +27,7 @@ export function middleware(req: NextRequest) {
 
   return NextResponse.next();
 }
+
+export const config = {
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\..*).*)"],
+};
