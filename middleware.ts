@@ -12,8 +12,8 @@ export async function middleware(req: NextRequest) {
   if (isApiRoute) return NextResponse.next();
 
   if (!token && !isAuthPage) {
-    const loginUrl = new URL("/polaris/login", req.nextUrl.origin);
-    loginUrl.searchParams.set("callbackUrl", req.nextUrl.href);
+    const base = process.env.NEXTAUTH_URL || req.nextUrl.origin;
+    const loginUrl = new URL("/polaris/login", base);
     return NextResponse.redirect(loginUrl);
   }
 
