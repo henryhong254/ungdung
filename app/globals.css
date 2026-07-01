@@ -1,0 +1,146 @@
+@import "tailwindcss";
+
+:root {
+  --bg-page:     #0d1a0d;
+  --bg-surface:  #132013;
+  --gold:        #c9a84c;
+  --cream:       #f0ebe0;
+  --cream-muted: #a89f8c;
+  --card-bg:     #f5f0e6;
+  --card-border: #d4c9b0;
+  --border-dark: rgba(255,255,255,0.08);
+}
+
+@theme inline {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--bg-page);
+  color: var(--cream);
+  font-family: var(--font-sans), Arial, sans-serif;
+}
+
+/* ==============================
+   DARK PAGE LEVEL
+   ============================== */
+
+h1, h2, h3 { color: var(--cream); }
+
+/* Inputs/selects on dark bg */
+input.border-gray-200,
+select.border-gray-200,
+input[class*="border-gray"] {
+  background: rgba(255,255,255,0.07);
+  color: var(--cream);
+  border-color: rgba(255,255,255,0.15) !important;
+}
+input.border-gray-200::placeholder { color: var(--cream-muted); }
+
+select.border-gray-200 option {
+  background: #1a2e1a;
+  color: var(--cream);
+}
+
+/* Buttons on dark bg */
+button.border-gray-300,
+button.border-gray-200 {
+  border-color: rgba(255,255,255,0.2) !important;
+  color: var(--cream) !important;
+  background: transparent !important;
+}
+button.border-gray-300:hover,
+button.border-gray-200:hover {
+  background: rgba(255,255,255,0.08) !important;
+}
+
+.text-gray-500 { color: var(--cream-muted); }
+.text-gray-400 { color: #7a8c7a; }
+
+/* ==============================
+   CARD SURFACES (.bg-white)
+   — Set default color so ALL text inside is dark
+   ============================== */
+.bg-white {
+  background-color: var(--card-bg) !important;
+  color: #1a2e1a !important;
+}
+
+/* Override specific gray shades inside cards */
+.bg-white h1, .bg-white h2, .bg-white h3 { color: #1a2e1a !important; }
+.bg-white .text-gray-900 { color: #1a2e1a !important; }
+.bg-white .text-gray-800 { color: #243824 !important; }
+.bg-white .text-gray-700 { color: #2e4a2e !important; }
+.bg-white .text-gray-600 { color: #3d5c3d !important; }
+.bg-white .text-gray-500 { color: #5a7a5a !important; }
+.bg-white .text-gray-400 { color: #7a9a7a !important; }
+.bg-white .text-gray-300 { color: #9ab09a !important; }
+.bg-white .bg-gray-50    { background-color: #ede8d8 !important; }
+.bg-white .bg-amber-50   { background-color: #fdf5e0 !important; }
+.bg-white .border-gray-200 { border-color: var(--card-border) !important; }
+.bg-white .border-gray-100 { border-color: #e0d8c8 !important; }
+.bg-white .hover\:bg-gray-50:hover  { background-color: #ede8d8 !important; }
+.bg-white .hover\:bg-gray-100:hover { background-color: #e0d8c8 !important; }
+
+/* Inputs inside cards */
+.bg-white input,
+.bg-white select,
+.bg-white textarea {
+  background: #faf7f0 !important;
+  color: #1a2e1a !important;
+  border-color: var(--card-border) !important;
+}
+.bg-white input::placeholder { color: #7a9a7a !important; }
+.bg-white select option {
+  background: #faf7f0;
+  color: #1a2e1a;
+}
+
+/* Buttons inside cards */
+.bg-white button.border-gray-200,
+.bg-white button.border-gray-300 {
+  border-color: var(--card-border) !important;
+  color: #2e4a2e !important;
+  background: transparent !important;
+}
+.bg-white button.border-gray-200:hover,
+.bg-white button.border-gray-300:hover {
+  background: #ede8d8 !important;
+}
+
+/* ==============================
+   SHARED COMPONENTS
+   ============================== */
+.input {
+  width: 100%;
+  border: 1px solid var(--card-border);
+  border-radius: 0.5rem;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+  outline: none;
+  background: var(--card-bg);
+  color: #1a2e1a;
+}
+.input:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 2px rgba(201,168,76,0.2);
+}
+
+/* Amber/gold */
+.text-amber-500 { color: var(--gold) !important; }
+.text-amber-600 { color: #b8902a !important; }
+.text-amber-700 { color: #a07820 !important; }
+.text-amber-800 { color: #886018 !important; }
+
+/* Plan filter bar (on dark bg) */
+.plan-filter input,
+.plan-filter select {
+  background: rgba(255,255,255,0.07) !important;
+  color: var(--cream) !important;
+  border-color: rgba(255,255,255,0.15) !important;
+}
+.plan-filter select option {
+  background: #1a2e1a;
+  color: var(--cream);
+}

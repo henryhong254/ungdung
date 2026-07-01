@@ -1,0 +1,55 @@
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
+
+export async function GET(req: NextRequest) {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const { searchParams } = new URL(req.url);
+    const from = searchParams.get("from");
+    const to = searchParams.get("to");
+    const unscheduled = searchParams.get("unscheduled") === "true";
+    const isExpert = (session.user as any).role === "expert";
+
+    const ideas = await prisma.idea.findMany({
+      where: {
+        assignedToId: isExpert ? undefined : session.user.id,
+        scheduledFor: unscheduled
+          ? null
+          : from || to
+          ? { gte: from ? new Date(from) : undefined, lte: to ? new Date(to) : undefined }
+          : undefined,
+      },
+      include: { assignedTo: { select: { id: true, name: true } } },
+      orderBy: [{ scheduledFor: "asc" }, { order: "asc" }, { createdAt: "desc" }],
+    });
+    return NextResponse.json(ideas);
+  } catch (e: any) {
+    console.error("[ideas GET]", e);
+    return NextResponse.json({ error: e?.message || "Server error" }, { status: 500 });
+  }
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const body = await req.json();
+    const idea = await prisma.idea.create({
+      data: {
+        createdById: session.user.id,
+        title: body.title,
+        description: body.description || null,
+        product: body.product || null,
+        workType: body.workType || null,
+      },
+      include: { assignedTo: { select: { id: true, name: true } } },
+    });
+    return NextResponse.json(idea, { status: 201 });
+  } catch (e: any) {
+    console.error("[ideas POST]", e);
+    return NextResponse.json({ error: e?.message || "Server error" }, { status: 500 });
+  }
+}

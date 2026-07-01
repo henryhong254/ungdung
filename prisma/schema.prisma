@@ -1,0 +1,133 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Customer {
+  id             String            @id @default(cuid())
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  name           String
+  phone          String            @unique
+  email          String?
+  occupation     String?
+  source         String?
+  initialProblem String?
+  segment        String?
+  status         String            @default("moi-dang-ky")
+  purchases      Purchase[]
+  profiles       CustomerProfile[]
+  notes          Note[]
+
+  @@map("customers")
+}
+
+model Purchase {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  customerId  String
+  product     String
+  productType String
+  amount      Float
+  purchasedAt DateTime @default(now())
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@map("purchases")
+}
+
+model CustomerProfile {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  customerId  String
+  productType String
+  data        String
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@unique([customerId, productType])
+  @@map("customer_profiles")
+}
+
+model Note {
+  id         String   @id @default(cuid())
+  createdAt  DateTime @default(now())
+  customerId String
+  content    String
+  noteDate   DateTime @default(now())
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@map("notes")
+}
+
+model User {
+  id            String      @id @default(cuid())
+  createdAt     DateTime    @default(now())
+  name          String
+  email         String      @unique
+  passwordHash  String
+  role          String      @default("assistant")
+  active        Boolean     @default(true)
+  timeEntries   TimeEntry[]
+  ideasCreated  Idea[]      @relation("IdeaCreatedBy")
+  ideasAssigned Idea[]      @relation("IdeaAssignedTo")
+  tasksAssigned Task[]      @relation("TaskAssignedTo")
+
+  @@map("users")
+}
+
+model TimeEntry {
+  id          String    @id @default(cuid())
+  createdAt   DateTime  @default(now())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ideaId      String?
+  idea        Idea?     @relation(fields: [ideaId], references: [id], onDelete: SetNull)
+  product     String
+  workType    String
+  note        String?
+  startedAt   DateTime
+  stoppedAt   DateTime?
+  durationMin Int?
+
+  @@map("time_entries")
+}
+
+model Idea {
+  id           String    @id @default(cuid())
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  createdById  String
+  createdBy    User      @relation("IdeaCreatedBy", fields: [createdById], references: [id])
+  assignedToId String?
+  assignedTo   User?     @relation("IdeaAssignedTo", fields: [assignedToId], references: [id])
+  title        String
+  description  String?
+  product      String?
+  workType     String?
+  scheduledFor DateTime?
+  done         Boolean     @default(false)
+  doneAt       DateTime?
+  order        Int         @default(0)
+  timeEntries  TimeEntry[]
+
+  @@map("ideas")
+}
+
+model Task {
+  id           String    @id @default(cuid())
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  assignedToId String?
+  assignedTo   User?     @relation("TaskAssignedTo", fields: [assignedToId], references: [id])
+  title        String
+  description  String?
+  workType     String?
+  scheduledFor DateTime?
+  done         Boolean   @default(false)
+  doneAt       DateTime?
+  order        Int       @default(0)
+
+  @@map("tasks")
+}
