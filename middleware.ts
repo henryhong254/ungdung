@@ -3,13 +3,13 @@ import type { NextRequest } from "next/server";
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+  console.log("[MW]", pathname, req.cookies.size);
 
   const isAuthPage = pathname === "/login" || pathname === "/polaris/login";
   const isApiRoute = pathname.startsWith("/api/");
 
   if (isApiRoute) return NextResponse.next();
 
-  // NextAuth v5 có thể dùng các tên cookie khác nhau
   const hasSession =
     req.cookies.has("authjs.session-token") ||
     req.cookies.has("next-auth.session-token") ||
@@ -18,6 +18,7 @@ export function middleware(req: NextRequest) {
 
   if (!hasSession && !isAuthPage) {
     const base = process.env.NEXTAUTH_URL || req.nextUrl.origin;
+    console.log("[MW] redirecting to login, base:", base);
     return NextResponse.redirect(new URL("/polaris/login", base));
   }
 
@@ -28,7 +29,3 @@ export function middleware(req: NextRequest) {
 
   return NextResponse.next();
 }
-
-export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
-};
