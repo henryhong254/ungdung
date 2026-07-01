@@ -17,11 +17,11 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
     const res = await signIn("credentials", { email, password, redirect: false });
-    if (res?.error) {
+    if (res?.error || !res?.ok) {
       setError("Email hoặc mật khẩu không đúng");
       setLoading(false);
     } else {
-      router.push("/");
+      window.location.href = "/polaris";
     }
   }
 
