@@ -600,7 +600,7 @@ export default function PlanPage() {
                           <Draggable key={`task-${task.id}`} draggableId={`task-${task.id}`} index={dayIdeas.length + i} isDragDisabled={!isExpert}>
                             {(provided, snapshot) => (
                               <div ref={provided.innerRef} {...(provided.draggableProps as any)} {...provided.dragHandleProps} className={snapshot.isDragging ? "shadow-lg" : ""}>
-                                <TaskCard task={task} isExpert={isExpert} onClick={() => openEditTask(task)} onToggle={toggleTaskDone} />
+                                <TaskCard task={task} isExpert={isExpert} onClick={() => openEditTask(task)} onToggle={toggleTaskDone} timerRunning={timerRunning} timerElapsed={timerElapsed} />
                               </div>
                             )}
                           </Draggable>
@@ -772,7 +772,9 @@ export default function PlanPage() {
           <div className="flex items-start justify-between mb-4 gap-2">
             <h2 className="font-semibold">Chỉnh sửa task</h2>
             {isExpert && (
-              <button onClick={() => deleteTask(editingTask.id)} className="text-xs text-red-400 hover:text-red-600 shrink-0">Xóa</button>
+              <button onClick={() => deleteTask(editingTask.id)} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-500 hover:text-red-700 rounded-lg text-sm font-medium transition-colors shrink-0">
+                🗑 Xóa
+              </button>
             )}
           </div>
           <form onSubmit={saveEditTask} className="space-y-3">
@@ -812,20 +814,30 @@ export default function PlanPage() {
             {!editingTask.done && (
               <div className="border-t border-gray-100 pt-3 mt-1">
                 {timerRunning ? (
-                  <div className="flex items-center justify-between bg-blue-50 rounded-xl px-3 py-2">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-                      <span className="text-xs text-blue-600 font-medium">Đang bấm giờ — {fmtTimer(timerElapsed)}</span>
+                  <div className={`rounded-xl px-3 py-2.5 ${timerRunning.note === editingTask.title ? "bg-blue-50 border border-blue-200" : "bg-amber-50 border border-amber-200"}`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-xs text-blue-600 font-semibold">{fmtTimer(timerElapsed)}</p>
+                          <p className="text-xs text-blue-500 truncate">
+                            {timerRunning.note
+                              ? `Đang bấm: "${timerRunning.note}"`
+                              : "Đang bấm giờ (không có tên)"}
+                          </p>
+                        </div>
+                      </div>
+                      <button type="button" onClick={stopTimer} className="text-xs text-red-400 hover:text-red-600 font-medium shrink-0 ml-2">■ Dừng</button>
                     </div>
-                    <button type="button" onClick={stopTimer} className="text-xs text-red-400 hover:text-red-600 font-medium">■ Dừng</button>
                   </div>
                 ) : (
                   <button
                     type="button"
                     onClick={async () => {
                       const wType = editTaskForm.workType || editingTask.workType || WORK_TYPES[0].value;
+                      const title = editTaskForm.title || editingTask.title;
                       setEditingTask(null);
-                      await startTimerForIdea(wType, undefined);
+                      await startTimerForIdea(wType, undefined, title);
                     }}
                     className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-blue-200 text-blue-600 hover:bg-blue-50 text-sm font-medium transition-colors"
                   >
@@ -935,17 +947,35 @@ function IdeaCard({ idea, isExpert, onClick, onToggle, onStartTimer, onStopTimer
   );
 }
 
-function TaskCard({ task, isExpert, onClick, onToggle }: {
+function TaskCard({ task, isExpert, onClick, onToggle, timerRunning, timerElapsed }: {
   task: Task; isExpert: boolean;
   onClick: () => void; onToggle: (t: Task) => void;
+  timerRunning?: { note?: string | null } | null;
+  timerElapsed?: number;
 }) {
   const color = wt(task.workType);
+  const isTimingThis = !!timerRunning && timerRunning.note === task.title;
+
+  function fmtElapsed(s: number) {
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+    if (h > 0) return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(sec).padStart(2,"0")}`;
+    return `${String(m).padStart(2,"0")}:${String(sec).padStart(2,"0")}`;
+  }
+
   return (
     <div
       onClick={onClick}
-      className={`group relative bg-gray-50 border border-gray-100 rounded-lg overflow-hidden cursor-pointer hover:border-blue-200 hover:shadow-sm transition-all ${task.done ? "opacity-50" : ""}`}
+      className={`group relative border rounded-lg overflow-hidden cursor-pointer transition-all ${task.done ? "opacity-50" : ""} ${isTimingThis ? "bg-blue-50 border-blue-300 shadow-blue-100 shadow-md" : "bg-gray-50 border-gray-100 hover:border-blue-200 hover:shadow-sm"}`}
     >
       {color && <div className={`h-1 w-full ${color.bar}`} />}
+      {isTimingThis && (
+        <div className="flex items-center justify-between px-2.5 py-1 bg-blue-100/60 border-b border-blue-200">
+          <div className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+            <span className="text-xs font-mono font-semibold text-blue-600">{fmtElapsed(timerElapsed ?? 0)}</span>
+          </div>
+        </div>
+      )}
       <div className="px-2.5 py-2 flex items-start gap-1.5">
         <button
           onClick={e => { e.stopPropagation(); onToggle(task); }}
