@@ -347,7 +347,7 @@ export default function PlanPage() {
     // idea dragged
     if (draggableId.startsWith("idea-")) {
       const ideaId = draggableId.replace("idea-", "");
-      if (destId === "backlog") {
+      if (destId === "backlog" || destId === "backlog-mobile") {
         await scheduleIdea(ideaId, null);
       } else if (destId.startsWith("day-")) {
         const date = destId.replace("day-", "");
@@ -511,8 +511,8 @@ export default function PlanPage() {
       <DragDropContext onDragEnd={onDragEnd}>
         <div className="flex gap-4 flex-1 min-h-0">
 
-          {/* Panel trái: Ideas (unscheduled) */}
-          <div className="flex-1 min-w-[140px] md:w-64 md:flex-none flex flex-col bg-white rounded-xl border border-gray-200 overflow-hidden">
+          {/* Desktop only: Ideas panel fixed left */}
+          <div className="hidden md:flex flex-col w-64 bg-white rounded-xl border border-gray-200 overflow-hidden">
             <div className="px-4 py-3 border-b border-gray-100 bg-amber-50 flex items-center justify-between shrink-0">
               <span className="text-sm font-medium text-amber-800">💡 Ideas</span>
               {isExpert && (
@@ -547,8 +547,43 @@ export default function PlanPage() {
             </Droppable>
           </div>
 
-          {/* Panel phải: Weekly board */}
+          {/* Scrollable board: on mobile includes Ideas as first column */}
           <div className="flex flex-1 gap-2 overflow-x-auto">
+
+            {/* Mobile only: Ideas as first scrollable column */}
+            <div className="md:hidden flex-none w-36 flex flex-col bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <div className="px-3 py-2 border-b border-gray-100 bg-amber-50 flex items-center justify-between shrink-0">
+                <span className="text-sm font-medium text-amber-800">💡 Ideas</span>
+                {isExpert && (
+                  <button onClick={() => setShowIdeaForm(true)} className="text-xs text-amber-600 hover:underline">+ Thêm</button>
+                )}
+              </div>
+              <Droppable droppableId="backlog-mobile">
+                {(provided, snapshot) => (
+                  <div
+                    ref={provided.innerRef} {...provided.droppableProps}
+                    className={`flex-1 overflow-y-auto p-2 space-y-1.5 ${snapshot.isDraggingOver ? "bg-amber-50/40" : ""}`}
+                  >
+                    {unscheduledIdeas.length === 0 && (
+                      <p className="text-xs text-gray-400 p-3 text-center">Chưa có idea.</p>
+                    )}
+                    {unscheduledIdeas.map((idea, index) => (
+                      <Draggable key={`m-${idea.id}`} draggableId={`idea-${idea.id}`} index={index} isDragDisabled={!isExpert}>
+                        {(provided, snapshot) => (
+                          <div
+                            ref={provided.innerRef} {...(provided.draggableProps as any)} {...provided.dragHandleProps}
+                            className={snapshot.isDragging ? "shadow-lg" : ""}
+                          >
+                            <IdeaCard idea={idea} isExpert={isExpert} onClick={() => openEditIdea(idea)} onToggle={toggleIdeaDone} onStartTimer={quickStartTimer} onStopTimer={stopTimer} timerRunning={timerRunning} timerElapsed={timerElapsed} />
+                          </div>
+                        )}
+                      </Draggable>
+                    ))}
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable>
+            </div>
             {weekDays.map(day => {
               const dateStr = isoDate(day);
               const dayIdeas = ideasForDay(day);

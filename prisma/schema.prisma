@@ -73,6 +73,7 @@ model User {
   ideasCreated  Idea[]      @relation("IdeaCreatedBy")
   ideasAssigned Idea[]      @relation("IdeaAssignedTo")
   tasksAssigned Task[]      @relation("TaskAssignedTo")
+  weekFocus     WeekFocus[]
 
   @@map("users")
 }
@@ -130,4 +131,17 @@ model Task {
   order        Int       @default(0)
 
   @@map("tasks")
+}
+
+model WeekFocus {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  weekStart String
+  focus     String
+
+  @@unique([userId, weekStart])
+  @@map("week_focus")
 }

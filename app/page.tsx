@@ -159,6 +159,79 @@ interface Idea {
   product: string | null;
 }
 
+function TheOneThingWidget() {
+  const [focus, setFocus] = useState("");
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [saving, setSaving] = useState(false);
+  const { status } = useSession();
+
+  const now = new Date();
+  const mon = new Date(now);
+  mon.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+  const weekStart = mon.toISOString().slice(0, 10);
+
+  useEffect(() => {
+    if (status !== "authenticated") return;
+    api(`/api/week-focus?weekStart=${weekStart}`).then(r => r.ok ? r.json() : null).then(d => {
+      if (d) { setFocus(d.focus || ""); if (!d.focus) setEditing(true); }
+    });
+  }, [status]);
+
+  async function save() {
+    setSaving(true);
+    const res = await api("/api/week-focus", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ focus: draft, weekStart }),
+    });
+    if (res.ok) { const d = await res.json(); setFocus(d.focus); }
+    setSaving(false);
+    setEditing(false);
+  }
+
+  function startEdit() { setDraft(focus); setEditing(true); }
+
+  if (editing) {
+    return (
+      <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl border-2 border-amber-300 p-4 md:p-5">
+        <p className="text-xs font-semibold text-amber-700 mb-1 uppercase tracking-wide">🎯 The One Thing Trong Tuần Này</p>
+        <p className="text-xs text-amber-600 mb-3">Điều quan trọng nhất bạn cần tập trung hoàn thành tuần này là gì?</p>
+        <textarea
+          autoFocus
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          placeholder="Ví dụ: Hoàn thiện tính năng X và giao cho khách hàng Y..."
+          rows={3}
+          className="w-full border-2 border-amber-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 resize-none placeholder:text-amber-300 bg-white"
+          onKeyDown={e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) save(); }}
+        />
+        <div className="flex gap-2 mt-2 justify-end">
+          {focus && <button onClick={() => setEditing(false)} className="text-xs text-gray-400 hover:text-gray-600 px-3 py-1.5">Huỷ</button>}
+          <button
+            onClick={save}
+            disabled={saving || !draft.trim()}
+            className="px-4 py-1.5 bg-amber-500 hover:bg-amber-600 disabled:opacity-40 text-white text-sm rounded-xl font-medium transition-colors"
+          >
+            {saving ? "..." : "Lưu"}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl p-4 md:p-5 cursor-pointer group relative"
+      onClick={startEdit}
+    >
+      <p className="text-xs font-semibold text-amber-100 mb-2 uppercase tracking-wide">🎯 The One Thing Trong Tuần Này</p>
+      <p className="text-base md:text-lg font-semibold text-white leading-snug">{focus}</p>
+      <button className="absolute top-3 right-3 text-amber-200 hover:text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity">✎ Sửa</button>
+    </div>
+  );
+}
+
 function IdeaWidget() {
   const [title, setTitle] = useState("");
   const [workType, setWorkType] = useState("");
@@ -293,6 +366,7 @@ export default function DashboardPage() {
 
   if (!data) return (
     <div className="max-w-4xl mx-auto space-y-6">
+      <TheOneThingWidget />
       <IdeaWidget />
       <div className="text-sm text-gray-400 pt-4 text-center">Đang tải...</div>
     </div>
@@ -303,6 +377,7 @@ export default function DashboardPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
+      <TheOneThingWidget />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <IdeaWidget />
         <WeekSummaryWidget />
