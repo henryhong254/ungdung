@@ -512,7 +512,7 @@ export default function PlanPage() {
         <div className="flex gap-4 flex-1 min-h-0">
 
           {/* Panel trái: Ideas (unscheduled) */}
-          <div className="flex-1 min-w-[140px] md:w-64 md:flex-none shrink-0 flex flex-col bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="flex-1 min-w-[140px] md:w-64 md:flex-none flex flex-col bg-white rounded-xl border border-gray-200 overflow-hidden">
             <div className="px-4 py-3 border-b border-gray-100 bg-amber-50 flex items-center justify-between shrink-0">
               <span className="text-sm font-medium text-amber-800">💡 Ideas</span>
               {isExpert && (
