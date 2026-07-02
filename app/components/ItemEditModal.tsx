@@ -11,6 +11,8 @@ export interface EditableItem {
   workType: string | null;
   done: boolean;
   assignedTo: { id: string; name: string } | null;
+  estimatedStart?: string | null;
+  estimatedEnd?: string | null;
   _type: "idea" | "task";
 }
 
@@ -33,7 +35,7 @@ interface ItemEditModalProps {
   isExpert: boolean;
   timer: TimerState;
   onClose: () => void;
-  onSave: (data: { title: string; description: string | null; workType: string | null; assignedToId: string | null }) => Promise<void>;
+  onSave: (data: { title: string; description: string | null; workType: string | null; assignedToId: string | null; estimatedStart?: string | null; estimatedEnd?: string | null }) => Promise<void>;
   onDelete: () => Promise<void>;
   onToggleDone: () => void;
   onStartTimer: (workType: string, ideaId?: string, title?: string) => void;
@@ -54,6 +56,8 @@ export default function ItemEditModal({
     description: item.description || "",
     workType: item.workType || "",
     assignedToId: item.assignedTo?.id || "",
+    estimatedStart: item.estimatedStart || "",
+    estimatedEnd: item.estimatedEnd || "",
   });
   const [saving, setSaving] = useState(false);
 
@@ -75,6 +79,8 @@ export default function ItemEditModal({
       description: form.description || null,
       workType: form.workType || null,
       assignedToId: form.assignedToId || null,
+      estimatedStart: form.estimatedStart || null,
+      estimatedEnd: form.estimatedEnd || null,
     });
     setSaving(false);
   }
@@ -179,6 +185,24 @@ export default function ItemEditModal({
               </select>
             </div>
           )}
+          <div>
+            <label className="text-xs text-gray-500 block mb-1">Thời gian dự kiến</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="time"
+                className="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-blue-400"
+                value={form.estimatedStart}
+                onChange={e => setForm({ ...form, estimatedStart: e.target.value })}
+              />
+              <span className="text-gray-400 text-sm shrink-0">→</span>
+              <input
+                type="time"
+                className="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-blue-400"
+                value={form.estimatedEnd}
+                onChange={e => setForm({ ...form, estimatedEnd: e.target.value })}
+              />
+            </div>
+          </div>
           <div className="pt-1">
             <button
               type="button"

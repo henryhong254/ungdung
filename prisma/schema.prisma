@@ -96,41 +96,45 @@ model TimeEntry {
 }
 
 model Idea {
-  id           String     @id @default(cuid())
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  createdById  String
-  createdBy    User       @relation("IdeaCreatedBy", fields: [createdById], references: [id])
-  assignedToId String?
-  assignedTo   User?      @relation("IdeaAssignedTo", fields: [assignedToId], references: [id])
-  title        String
-  description  String?
-  product      String?
-  workType     String?
-  scheduledFor DateTime?
-  done         Boolean    @default(false)
-  doneAt       DateTime?
-  order        Int        @default(0)
-  timeEntries  TimeEntry[]
-  todos        TodoItem[]
+  id             String     @id @default(cuid())
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  createdById    String
+  createdBy      User       @relation("IdeaCreatedBy", fields: [createdById], references: [id])
+  assignedToId   String?
+  assignedTo     User?      @relation("IdeaAssignedTo", fields: [assignedToId], references: [id])
+  title          String
+  description    String?
+  product        String?
+  workType       String?
+  scheduledFor   DateTime?
+  done           Boolean    @default(false)
+  doneAt         DateTime?
+  order          Int        @default(0)
+  estimatedStart String?
+  estimatedEnd   String?
+  timeEntries    TimeEntry[]
+  todos          TodoItem[]
 
   @@map("ideas")
 }
 
 model Task {
-  id           String     @id @default(cuid())
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  assignedToId String?
-  assignedTo   User?      @relation("TaskAssignedTo", fields: [assignedToId], references: [id])
-  title        String
-  description  String?
-  workType     String?
-  scheduledFor DateTime?
-  done         Boolean    @default(false)
-  doneAt       DateTime?
-  order        Int        @default(0)
-  todos        TodoItem[]
+  id             String     @id @default(cuid())
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  assignedToId   String?
+  assignedTo     User?      @relation("TaskAssignedTo", fields: [assignedToId], references: [id])
+  title          String
+  description    String?
+  workType       String?
+  scheduledFor   DateTime?
+  done           Boolean    @default(false)
+  doneAt         DateTime?
+  order          Int        @default(0)
+  estimatedStart String?
+  estimatedEnd   String?
+  todos          TodoItem[]
 
   @@map("tasks")
 }

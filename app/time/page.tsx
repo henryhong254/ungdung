@@ -24,6 +24,8 @@ interface Idea {
   workType: string | null;
   done: boolean;
   assignedTo: { id: string; name: string } | null;
+  estimatedStart?: string | null;
+  estimatedEnd?: string | null;
 }
 
 interface Task {
@@ -33,6 +35,8 @@ interface Task {
   workType: string | null;
   done: boolean;
   assignedTo: { id: string; name: string } | null;
+  estimatedStart?: string | null;
+  estimatedEnd?: string | null;
 }
 
 type AnyItem = (Idea & { _type: "idea" }) | (Task & { _type: "task" });
@@ -402,6 +406,11 @@ export default function TodayPage() {
                     className="w-5 h-5 rounded-md border-2 border-gray-300 active:border-green-400 shrink-0 flex items-center justify-center transition-colors touch-manipulation"
                   />
                   <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setDetailItem(item)}>
+                    {item.estimatedStart && (
+                      <p className="text-[10px] text-blue-400 font-medium mb-0.5">
+                        🕐 {item.estimatedStart}{item.estimatedEnd ? ` – ${item.estimatedEnd}` : ""}
+                      </p>
+                    )}
                     <p className="text-sm text-gray-800 leading-snug">{item.title}</p>
                     {item.workType && (
                       <div className="flex items-center gap-1.5 mt-0.5">

@@ -20,6 +20,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       if (body.assignedToId !== undefined) data.assignedToId = body.assignedToId || null;
       if (body.scheduledFor !== undefined) data.scheduledFor = body.scheduledFor ? new Date(body.scheduledFor) : null;
       if (body.order !== undefined) data.order = body.order;
+      if (body.estimatedStart !== undefined) data.estimatedStart = body.estimatedStart || null;
+      if (body.estimatedEnd !== undefined) data.estimatedEnd = body.estimatedEnd || null;
     }
     if (body.done !== undefined) {
       data.done = body.done;

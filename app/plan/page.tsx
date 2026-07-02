@@ -14,12 +14,14 @@ interface Idea {
   product: string | null; workType: string | null;
   scheduledFor: string | null; done: boolean;
   assignedTo: User | null; order: number;
+  estimatedStart?: string | null; estimatedEnd?: string | null;
 }
 
 interface Task {
   id: string; title: string; description: string | null;
   workType: string | null; scheduledFor: string | null;
   done: boolean; assignedTo: User | null; order: number;
+  estimatedStart?: string | null; estimatedEnd?: string | null;
 }
 
 function getWeekDays(offset = 0) {
@@ -77,7 +79,7 @@ export default function PlanPage() {
 
   // Idea form
   const [showIdeaForm, setShowIdeaForm] = useState(false);
-  const [ideaForm, setIdeaForm] = useState({ title: "", description: "", product: "", workType: "" });
+  const [ideaForm, setIdeaForm] = useState({ title: "", description: "", product: "", workType: "", estimatedStart: "", estimatedEnd: "" });
 
   // Edit idea/task — shared modal
   const [editingIdea, setEditingIdea] = useState<Idea | null>(null);
@@ -89,7 +91,7 @@ export default function PlanPage() {
   const [editItem, setEditItem] = useState<EditItem | null>(null);
 
   // Task form (from day column)
-  const emptyTaskForm = { title: "", description: "", workType: "", assignedToId: currentUserId };
+  const emptyTaskForm = { title: "", description: "", workType: "", assignedToId: currentUserId, estimatedStart: "", estimatedEnd: "" };
   const [showTaskForm, setShowTaskForm] = useState<string | null>(null); // "YYYY-MM-DD"
   const [taskForm, setTaskForm] = useState(emptyTaskForm);
   const [savingTask, setSavingTask] = useState(false);
@@ -225,7 +227,7 @@ export default function PlanPage() {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...ideaForm, workType: ideaForm.workType || null }),
     });
-    setIdeaForm({ title: "", description: "", product: "", workType: "" });
+    setIdeaForm({ title: "", description: "", product: "", workType: "", estimatedStart: "", estimatedEnd: "" });
     setShowIdeaForm(false);
     if (res.ok) {
       const newIdea = await res.json();
@@ -699,6 +701,13 @@ export default function PlanPage() {
                 </select>
               </Field>
             </div>
+            <Field label="Thời gian dự kiến">
+              <div className="flex items-center gap-2">
+                <input type="time" className="input flex-1" value={ideaForm.estimatedStart} onChange={e => setIdeaForm({ ...ideaForm, estimatedStart: e.target.value })} />
+                <span className="text-gray-400 text-sm shrink-0">→</span>
+                <input type="time" className="input flex-1" value={ideaForm.estimatedEnd} onChange={e => setIdeaForm({ ...ideaForm, estimatedEnd: e.target.value })} />
+              </div>
+            </Field>
             {/* To Do List */}
             <div className="border-t border-gray-100 pt-3 space-y-2">
               <p className="text-xs font-semibold text-gray-600">☑ To Do List</p>
@@ -750,6 +759,13 @@ export default function PlanPage() {
                 <option value="">-- Chưa giao --</option>
                 {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
               </select>
+            </Field>
+            <Field label="Thời gian dự kiến">
+              <div className="flex items-center gap-2">
+                <input type="time" className="input flex-1" value={taskForm.estimatedStart} onChange={e => setTaskForm({ ...taskForm, estimatedStart: e.target.value })} />
+                <span className="text-gray-400 text-sm shrink-0">→</span>
+                <input type="time" className="input flex-1" value={taskForm.estimatedEnd} onChange={e => setTaskForm({ ...taskForm, estimatedEnd: e.target.value })} />
+              </div>
             </Field>
 
             {/* To Do List */}
@@ -908,6 +924,11 @@ function IdeaCard({ idea, isExpert, onClick, onToggle, onStartTimer, onStopTimer
           {idea.done && <span className="text-white text-xs leading-none">✓</span>}
         </button>
         <div className="flex-1 min-w-0">
+          {idea.estimatedStart && (
+            <p className="text-[10px] text-amber-500 font-medium mb-0.5">
+              🕐 {idea.estimatedStart}{idea.estimatedEnd ? ` – ${idea.estimatedEnd}` : ""}
+            </p>
+          )}
           <p className={`text-xs font-medium leading-tight ${idea.done ? "line-through text-gray-400" : "text-gray-800"}`}>{idea.title}</p>
           {!compact && idea.description && <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{idea.description}</p>}
           {idea.assignedTo && <p className="text-xs text-amber-500 mt-0.5">{idea.assignedTo.name.split(" ").pop()}</p>}
@@ -967,6 +988,11 @@ function TaskCard({ task, isExpert, onClick, onToggle, timerRunning, timerElapse
           {task.done && <span className="text-white text-xs leading-none">✓</span>}
         </button>
         <div className="flex-1 min-w-0">
+          {task.estimatedStart && (
+            <p className="text-[10px] text-blue-400 font-medium mb-0.5">
+              🕐 {task.estimatedStart}{task.estimatedEnd ? ` – ${task.estimatedEnd}` : ""}
+            </p>
+          )}
           <p className={`text-xs leading-tight ${task.done ? "line-through text-gray-400" : "text-gray-700"}`}>{task.title}</p>
           {task.assignedTo && <p className="text-xs text-blue-500 mt-0.5">{task.assignedTo.name.split(" ").pop()}</p>}
         </div>
