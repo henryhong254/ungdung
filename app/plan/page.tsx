@@ -354,6 +354,15 @@ export default function PlanPage() {
         else await scheduleIdea(ideaId, date, users[0]?.id);
       }
     }
+
+    // task dragged
+    if (draggableId.startsWith("task-")) {
+      const taskId = draggableId.replace("task-", "");
+      if (destId.startsWith("day-") || destId.startsWith("tasks-")) {
+        const date = destId.replace("day-", "").replace("tasks-", "");
+        await scheduleTask(taskId, date);
+      }
+    }
   }
 
   const unscheduledIdeas = ideas.filter(i => !i.scheduledFor && matchesFilter(i));
@@ -556,8 +565,14 @@ export default function PlanPage() {
                         {provided.placeholder}
 
                         {/* Tasks created directly in this day */}
-                        {dayTasks.map(task => (
-                          <TaskCard key={task.id} task={task} isExpert={isExpert} onClick={() => openEditTask(task)} onToggle={toggleTaskDone} />
+                        {dayTasks.map((task, i) => (
+                          <Draggable key={`task-${task.id}`} draggableId={`task-${task.id}`} index={dayIdeas.length + i} isDragDisabled={!isExpert}>
+                            {(provided, snapshot) => (
+                              <div ref={provided.innerRef} {...(provided.draggableProps as any)} {...provided.dragHandleProps} className={snapshot.isDragging ? "shadow-lg" : ""}>
+                                <TaskCard task={task} isExpert={isExpert} onClick={() => openEditTask(task)} onToggle={toggleTaskDone} />
+                              </div>
+                            )}
+                          </Draggable>
                         ))}
 
                         {isExpert && (
