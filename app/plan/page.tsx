@@ -660,7 +660,7 @@ export default function PlanPage() {
           <div className="flex items-start justify-between mb-4 gap-2">
             <h2 className="font-semibold">💡 Chỉnh sửa idea</h2>
             {isExpert && (
-              <button onClick={() => deleteIdea(editingIdea.id)} className="text-xs text-red-400 hover:text-red-600 shrink-0">Xóa</button>
+              <button onClick={() => deleteIdea(editingIdea.id)} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-500 hover:text-red-700 rounded-lg text-sm font-medium transition-colors shrink-0">🗑 Xóa</button>
             )}
           </div>
           <form onSubmit={saveEditIdea} className="space-y-3">
