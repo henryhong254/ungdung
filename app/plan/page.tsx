@@ -227,14 +227,6 @@ export default function PlanPage() {
 
   function openEditIdea(idea: Idea) {
     setEditItem({ ...idea, _type: "idea" });
-    setEditingIdea(idea);
-    setEditIdeaForm({
-      title: idea.title,
-      description: idea.description || "",
-      workType: idea.workType || "",
-      assignedToId: idea.assignedTo?.id || "",
-    });
-    setEditIdeaError("");
   }
 
   async function saveEditIdea(e: React.FormEvent) {
@@ -296,14 +288,6 @@ export default function PlanPage() {
 
   function openEditTask(task: Task) {
     setEditItem({ ...task, _type: "task" });
-    setEditingTask(task);
-    setEditTaskForm({
-      title: task.title,
-      description: task.description || "",
-      workType: task.workType || "",
-      assignedToId: task.assignedTo?.id || "",
-    });
-    setEditTaskError("");
   }
 
   async function saveEditTask(e: React.FormEvent) {
@@ -684,89 +668,6 @@ export default function PlanPage() {
         </Modal>
       )}
 
-      {/* Modal chỉnh sửa idea */}
-      {editingIdea && (
-        <Modal onClose={() => setEditingIdea(null)} wide>
-          <div className="flex items-start justify-between mb-4 gap-2">
-            <h2 className="font-semibold">💡 Chỉnh sửa idea</h2>
-            {isExpert && (
-              <button onClick={() => deleteIdea(editingIdea.id)} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-500 hover:text-red-700 rounded-lg text-sm font-medium transition-colors shrink-0">🗑 Xóa</button>
-            )}
-          </div>
-          <form onSubmit={saveEditIdea} className="space-y-3">
-            <Field label="Tiêu đề *">
-              <input required autoFocus className="input" value={editIdeaForm.title} onChange={e => setEditIdeaForm({ ...editIdeaForm, title: e.target.value })} />
-            </Field>
-            <Field label="Mô tả">
-              <textarea rows={3} className="input resize-none" value={editIdeaForm.description} onChange={e => setEditIdeaForm({ ...editIdeaForm, description: e.target.value })} />
-            </Field>
-            <Field label="Loại công việc">
-              <select className="input" value={editIdeaForm.workType} onChange={e => setEditIdeaForm({ ...editIdeaForm, workType: e.target.value })}>
-                <option value="">-- Chưa chọn --</option>
-                {WORK_TYPES.map(w => <option key={w.value} value={w.value}>{w.label}</option>)}
-              </select>
-            </Field>
-            <Field label="Giao cho">
-              <select className="input" value={editIdeaForm.assignedToId} onChange={e => setEditIdeaForm({ ...editIdeaForm, assignedToId: e.target.value })}>
-                <option value="">-- Chưa giao --</option>
-                {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-              </select>
-            </Field>
-            <div className="flex items-center gap-2 py-1">
-              <button
-                type="button"
-                onClick={() => { toggleIdeaDone(editingIdea); setEditingIdea(null); }}
-                className={`flex items-center gap-2 text-sm px-3 py-1.5 rounded-lg border transition-colors ${editingIdea.done ? "border-green-300 bg-green-50 text-green-700" : "border-gray-200 hover:bg-gray-50 text-gray-600"}`}
-              >
-                <span className={`w-4 h-4 rounded border flex items-center justify-center text-xs ${editingIdea.done ? "bg-green-500 border-green-500 text-white" : "border-gray-300"}`}>
-                  {editingIdea.done && "✓"}
-                </span>
-                {editingIdea.done ? "Đã xong" : "Đánh dấu xong"}
-              </button>
-              {editingIdea.scheduledFor && (
-                <span className="text-xs text-gray-400">📅 {new Date(editingIdea.scheduledFor).toLocaleDateString("vi-VN")}</span>
-              )}
-              {editingIdea.scheduledFor && isExpert && (
-                <button type="button" onClick={() => scheduleIdea(editingIdea.id, null)}
-                  className="text-xs text-gray-400 hover:text-gray-600 ml-auto">
-                  ↩ Bỏ lịch
-                </button>
-              )}
-            </div>
-            {editIdeaError && <p className="text-xs text-red-500">{editIdeaError}</p>}
-
-            {/* Bấm giờ cho idea này */}
-            {!editingIdea.done && (
-              <div className="border-t border-gray-100 pt-3 mt-1">
-                {timerRunning ? (
-                  <div className="flex items-center justify-between bg-blue-50 rounded-xl px-3 py-2">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-                      <span className="text-xs text-blue-600 font-medium">Đang bấm giờ — {fmtTimer(timerElapsed)}</span>
-                    </div>
-                    <button type="button" onClick={stopTimer} className="text-xs text-red-400 hover:text-red-600 font-medium">■ Dừng</button>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      const wType = editIdeaForm.workType || editingIdea.workType || WORK_TYPES[0].value;
-                      setEditingIdea(null);
-                      await startTimerForIdea(wType, editingIdea.id);
-                    }}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-blue-200 text-blue-600 hover:bg-blue-50 text-sm font-medium transition-colors"
-                  >
-                    ▶ Bắt đầu bấm giờ
-                  </button>
-                )}
-              </div>
-            )}
-
-            <ModalActions onCancel={() => setEditingIdea(null)} submitLabel="Lưu thay đổi" loading={savingEditIdea} />
-          </form>
-        </Modal>
-      )}
-
       {/* Modal thêm task từ cột ngày */}
       {showTaskForm && (
         <Modal onClose={() => { setShowTaskForm(null); setTaskError(""); }}>
@@ -792,92 +693,6 @@ export default function PlanPage() {
             </Field>
             {taskError && <p className="text-xs text-red-500">{taskError}</p>}
             <ModalActions onCancel={() => { setShowTaskForm(null); setTaskError(""); }} submitLabel="Lưu task" loading={savingTask} />
-          </form>
-        </Modal>
-      )}
-
-      {/* Modal chỉnh sửa task */}
-      {editingTask && (
-        <Modal onClose={() => setEditingTask(null)} wide>
-          <div className="flex items-start justify-between mb-4 gap-2">
-            <h2 className="font-semibold">Chỉnh sửa task</h2>
-            {isExpert && (
-              <button onClick={() => deleteTask(editingTask.id)} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-500 hover:text-red-700 rounded-lg text-sm font-medium transition-colors shrink-0">
-                🗑 Xóa
-              </button>
-            )}
-          </div>
-          <form onSubmit={saveEditTask} className="space-y-3">
-            <Field label="Tiêu đề *">
-              <input required autoFocus className="input" value={editTaskForm.title} onChange={e => setEditTaskForm({ ...editTaskForm, title: e.target.value })} />
-            </Field>
-            <Field label="Mô tả">
-              <textarea rows={3} className="input resize-none" value={editTaskForm.description} onChange={e => setEditTaskForm({ ...editTaskForm, description: e.target.value })} />
-            </Field>
-            <Field label="Loại công việc">
-              <select className="input" value={editTaskForm.workType} onChange={e => setEditTaskForm({ ...editTaskForm, workType: e.target.value })}>
-                <option value="">-- Chưa chọn --</option>
-                {WORK_TYPES.map(w => <option key={w.value} value={w.value}>{w.label}</option>)}
-              </select>
-            </Field>
-            <Field label="Giao cho">
-              <select className="input" value={editTaskForm.assignedToId} onChange={e => setEditTaskForm({ ...editTaskForm, assignedToId: e.target.value })}>
-                <option value="">-- Chưa giao --</option>
-                {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-              </select>
-            </Field>
-            <div className="flex items-center gap-2 py-1">
-              <button
-                type="button"
-                onClick={() => { toggleTaskDone(editingTask); setEditingTask(null); }}
-                className={`flex items-center gap-2 text-sm px-3 py-1.5 rounded-lg border transition-colors ${editingTask.done ? "border-green-300 bg-green-50 text-green-700" : "border-gray-200 hover:bg-gray-50 text-gray-600"}`}
-              >
-                <span className={`w-4 h-4 rounded border flex items-center justify-center text-xs ${editingTask.done ? "bg-green-500 border-green-500 text-white" : "border-gray-300"}`}>
-                  {editingTask.done && "✓"}
-                </span>
-                {editingTask.done ? "Đã xong" : "Đánh dấu xong"}
-              </button>
-            </div>
-            {editTaskError && <p className="text-xs text-red-500">{editTaskError}</p>}
-
-            {/* Bấm giờ cho task này */}
-            {!editingTask.done && (
-              <div className="border-t border-gray-100 pt-3 mt-1">
-                {timerRunning ? (
-                  <div className={`rounded-xl px-3 py-2.5 ${timerRunning.note === editingTask.title ? "bg-blue-50 border border-blue-200" : "bg-amber-50 border border-amber-200"}`}>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse shrink-0" />
-                        <div className="min-w-0">
-                          <p className="text-xs text-blue-600 font-semibold">{fmtTimer(timerElapsed)}</p>
-                          <p className="text-xs text-blue-500 truncate">
-                            {timerRunning.note
-                              ? `Đang bấm: "${timerRunning.note}"`
-                              : "Đang bấm giờ (không có tên)"}
-                          </p>
-                        </div>
-                      </div>
-                      <button type="button" onClick={stopTimer} className="text-xs text-red-400 hover:text-red-600 font-medium shrink-0 ml-2">■ Dừng</button>
-                    </div>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      const wType = editTaskForm.workType || editingTask.workType || WORK_TYPES[0].value;
-                      const title = editTaskForm.title || editingTask.title;
-                      setEditingTask(null);
-                      await startTimerForIdea(wType, undefined, title);
-                    }}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-blue-200 text-blue-600 hover:bg-blue-50 text-sm font-medium transition-colors"
-                  >
-                    ▶ Bắt đầu bấm giờ
-                  </button>
-                )}
-              </div>
-            )}
-
-            <ModalActions onCancel={() => setEditingTask(null)} submitLabel="Lưu thay đổi" loading={savingEditTask} />
           </form>
         </Modal>
       )}
