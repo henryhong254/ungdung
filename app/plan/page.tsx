@@ -600,7 +600,7 @@ export default function PlanPage() {
                           <Draggable key={`task-${task.id}`} draggableId={`task-${task.id}`} index={dayIdeas.length + i} isDragDisabled={!isExpert}>
                             {(provided, snapshot) => (
                               <div ref={provided.innerRef} {...(provided.draggableProps as any)} {...provided.dragHandleProps} className={snapshot.isDragging ? "shadow-lg" : ""}>
-                                <TaskCard task={task} isExpert={isExpert} onClick={() => openEditTask(task)} onToggle={toggleTaskDone} timerRunning={timerRunning} timerElapsed={timerElapsed} />
+                                <TaskCard task={task} isExpert={isExpert} onClick={() => openEditTask(task)} onToggle={toggleTaskDone} timerRunning={timerRunning} timerElapsed={timerElapsed} onStartTimer={(title, workType) => startTimerForIdea(workType, undefined, title)} onStopTimer={stopTimer} />
                               </div>
                             )}
                           </Draggable>
@@ -947,14 +947,16 @@ function IdeaCard({ idea, isExpert, onClick, onToggle, onStartTimer, onStopTimer
   );
 }
 
-function TaskCard({ task, isExpert, onClick, onToggle, timerRunning, timerElapsed }: {
+function TaskCard({ task, isExpert, onClick, onToggle, timerRunning, timerElapsed, onStartTimer, onStopTimer }: {
   task: Task; isExpert: boolean;
   onClick: () => void; onToggle: (t: Task) => void;
   timerRunning?: { note?: string | null } | null;
   timerElapsed?: number;
+  onStartTimer?: (title: string, workType: string) => void;
+  onStopTimer?: () => void;
 }) {
   const color = wt(task.workType);
-  const isTimingThis = !!timerRunning && timerRunning.note === task.title;
+  const isTimingThis = !!timerRunning && !!timerRunning.note && timerRunning.note === task.title;
 
   function fmtElapsed(s: number) {
     const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
@@ -974,6 +976,10 @@ function TaskCard({ task, isExpert, onClick, onToggle, timerRunning, timerElapse
             <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
             <span className="text-xs font-mono font-semibold text-blue-600">{fmtElapsed(timerElapsed ?? 0)}</span>
           </div>
+          <button
+            onClick={e => { e.stopPropagation(); onStopTimer?.(); }}
+            className="text-xs text-blue-400 hover:text-red-500 transition-colors font-medium"
+          >■ Dừng</button>
         </div>
       )}
       <div className="px-2.5 py-2 flex items-start gap-1.5">
@@ -987,6 +993,13 @@ function TaskCard({ task, isExpert, onClick, onToggle, timerRunning, timerElapse
           <p className={`text-xs leading-tight ${task.done ? "line-through text-gray-400" : "text-gray-700"}`}>{task.title}</p>
           {task.assignedTo && <p className="text-xs text-blue-500 mt-0.5">{task.assignedTo.name.split(" ").pop()}</p>}
         </div>
+        {onStartTimer && !isTimingThis && !task.done && (
+          <button
+            onClick={e => { e.stopPropagation(); onStartTimer(task.title, task.workType || WORK_TYPES[0].value); }}
+            title="Bắt đầu bấm giờ"
+            className="opacity-0 group-hover:opacity-100 shrink-0 text-blue-400 hover:text-blue-600 transition-all ml-0.5 text-xs"
+          >▶</button>
+        )}
       </div>
     </div>
   );
