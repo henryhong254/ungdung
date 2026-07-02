@@ -50,7 +50,6 @@ export default function PlanPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [weekOffset, setWeekOffset] = useState(0);
   const weekDays = getWeekDays(weekOffset);
-  const [mobileTab, setMobileTab] = useState<"ideas" | "week">("ideas");
 
   const currentUserId = (session?.user as any)?.id || "";
   const [search, setSearch] = useState("");
@@ -508,27 +507,12 @@ export default function PlanPage() {
         )}
       </div>
 
-      {/* Mobile tab switcher */}
-      <div className="flex md:hidden border border-gray-200 rounded-lg p-0.5 bg-gray-50 shrink-0">
-        <button
-          onClick={() => setMobileTab("ideas")}
-          className={`flex-1 py-2 text-sm rounded-md transition-colors font-medium ${mobileTab === "ideas" ? "bg-white shadow-sm text-gray-800" : "text-gray-400"}`}
-        >
-          💡 Ideas
-        </button>
-        <button
-          onClick={() => setMobileTab("week")}
-          className={`flex-1 py-2 text-sm rounded-md transition-colors font-medium ${mobileTab === "week" ? "bg-white shadow-sm text-gray-800" : "text-gray-400"}`}
-        >
-          📅 Lịch tuần
-        </button>
-      </div>
 
       <DragDropContext onDragEnd={onDragEnd}>
         <div className="flex gap-4 flex-1 min-h-0">
 
           {/* Panel trái: Ideas (unscheduled) */}
-          <div className={`${mobileTab === "ideas" ? "flex" : "hidden"} md:flex w-full md:w-64 shrink-0 flex-col bg-white rounded-xl border border-gray-200 overflow-hidden`}>
+          <div className="flex w-52 shrink-0 flex-col bg-white rounded-xl border border-gray-200 overflow-hidden">
             <div className="px-4 py-3 border-b border-gray-100 bg-amber-50 flex items-center justify-between shrink-0">
               <span className="text-sm font-medium text-amber-800">💡 Ideas</span>
               {isExpert && (
@@ -564,7 +548,7 @@ export default function PlanPage() {
           </div>
 
           {/* Panel phải: Weekly board */}
-          <div className={`${mobileTab === "week" ? "flex" : "hidden"} md:flex flex-1 gap-2 overflow-x-auto`}>
+          <div className="flex flex-1 gap-2 overflow-x-auto">
             {weekDays.map(day => {
               const dateStr = isoDate(day);
               const dayIdeas = ideasForDay(day);

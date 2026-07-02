@@ -78,6 +78,19 @@ export default function Sidebar() {
             </Link>
           );
         })}
+        {/* Account / logout */}
+        {session && (
+          <button
+            onClick={() => signOut()}
+            className="flex-1 flex flex-col items-center justify-center py-2 gap-0.5 text-[10px]"
+            style={{ color: "var(--cream-muted)" }}
+          >
+            <div className="w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center text-white text-[10px] font-bold leading-none">
+              {session.user?.name?.split(" ").pop()?.[0]}
+            </div>
+            <span className="truncate max-w-full px-0.5">{session.user?.name?.split(" ").pop()}</span>
+          </button>
+        )}
       </nav>
     </>
   );
