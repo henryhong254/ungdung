@@ -340,7 +340,8 @@ export default function PlanPage() {
   // ---- Drag & Drop ----
   async function onDragEnd(result: DropResult) {
     if (!result.destination) return;
-    const { draggableId, destination } = result;
+    const { draggableId, source, destination } = result;
+    const srcId = source.droppableId;
     const destId = destination.droppableId;
 
     // idea dragged
@@ -358,9 +359,37 @@ export default function PlanPage() {
     // task dragged
     if (draggableId.startsWith("task-")) {
       const taskId = draggableId.replace("task-", "");
-      if (destId.startsWith("day-") || destId.startsWith("tasks-")) {
-        const date = destId.replace("day-", "").replace("tasks-", "");
-        await scheduleTask(taskId, date);
+      const destDate = destId.replace("day-", "");
+      const srcDate = srcId.replace("day-", "");
+
+      if (srcDate === destDate) {
+        // Reorder trong cùng 1 ngày — cập nhật order cho tất cả task trong ngày đó
+        const day = weekDays.find(d => isoDate(d) === destDate);
+        if (!day) return;
+        const dayTaskList = tasksForDay(day);
+        const reordered = [...dayTaskList];
+        const fromIdx = reordered.findIndex(t => t.id === taskId);
+        // destination.index tính cả ideas, trừ đi số ideas trong ngày
+        const ideasCount = ideasForDay(day).length;
+        const toIdx = destination.index - ideasCount;
+        if (fromIdx === -1 || toIdx < 0) return;
+        const [moved] = reordered.splice(fromIdx, 1);
+        reordered.splice(toIdx, 0, moved);
+        // Optimistic update
+        setTasks(prev => {
+          const others = prev.filter(t => !reordered.find(r => r.id === t.id));
+          return [...others, ...reordered.map((t, i) => ({ ...t, order: i }))];
+        });
+        // Persist order
+        await Promise.all(reordered.map((t, i) =>
+          api(`/api/tasks/${t.id}`, {
+            method: "PATCH", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ order: i }),
+          })
+        ));
+      } else {
+        // Chuyển sang ngày khác
+        await scheduleTask(taskId, destDate);
       }
     }
   }
@@ -369,7 +398,9 @@ export default function PlanPage() {
   const ideasForDay = (date: Date) =>
     ideas.filter(i => i.scheduledFor && isoDate(new Date(i.scheduledFor)) === isoDate(date) && matchesFilter(i));
   const tasksForDay = (date: Date) =>
-    tasks.filter(t => t.scheduledFor && isoDate(new Date(t.scheduledFor)) === isoDate(date) && matchesFilter(t));
+    tasks
+      .filter(t => t.scheduledFor && isoDate(new Date(t.scheduledFor)) === isoDate(date) && matchesFilter(t))
+      .sort((a, b) => a.order - b.order);
 
   return (
     <div className="h-full flex flex-col gap-3">
