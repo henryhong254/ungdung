@@ -110,6 +110,7 @@ model Idea {
   scheduledFor DateTime?
   done         Boolean     @default(false)
   doneAt       DateTime?
+  doneNote     String?
   order        Int         @default(0)
   timeEntries  TimeEntry[]
 
@@ -128,6 +129,7 @@ model Task {
   scheduledFor DateTime?
   done         Boolean   @default(false)
   doneAt       DateTime?
+  doneNote     String?
   order        Int       @default(0)
 
   @@map("tasks")
