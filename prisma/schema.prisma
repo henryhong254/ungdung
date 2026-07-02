@@ -117,20 +117,33 @@ model Idea {
 }
 
 model Task {
-  id           String    @id @default(cuid())
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id           String     @id @default(cuid())
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
   assignedToId String?
-  assignedTo   User?     @relation("TaskAssignedTo", fields: [assignedToId], references: [id])
+  assignedTo   User?      @relation("TaskAssignedTo", fields: [assignedToId], references: [id])
   title        String
   description  String?
   workType     String?
   scheduledFor DateTime?
-  done         Boolean   @default(false)
+  done         Boolean    @default(false)
   doneAt       DateTime?
-  order        Int       @default(0)
+  order        Int        @default(0)
+  todos        TodoItem[]
 
   @@map("tasks")
+}
+
+model TodoItem {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  title     String
+  done      Boolean  @default(false)
+  order     Int      @default(0)
+
+  @@map("todo_items")
 }
 
 model WeekFocus {

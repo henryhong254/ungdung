@@ -1,0 +1,10 @@
+-- CreateTable
+CREATE TABLE "todo_items" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "taskId" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "done" INTEGER NOT NULL DEFAULT 0,
+    "order" INTEGER NOT NULL DEFAULT 0,
+    CONSTRAINT "todo_items_taskId_fkey" FOREIGN KEY ("taskId") REFERENCES "tasks" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);

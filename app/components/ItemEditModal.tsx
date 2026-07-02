@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { WORK_TYPES } from "@/lib/constants";
+import { api } from "@/lib/api";
 
 export interface EditableItem {
   id: string;
@@ -15,8 +16,15 @@ export interface EditableItem {
 
 interface TimerState {
   isRunning: boolean;
-  elapsed: number; // seconds
+  elapsed: number;
   label?: string | null;
+}
+
+interface TodoItem {
+  id: string;
+  title: string;
+  done: boolean;
+  order: number;
 }
 
 interface ItemEditModalProps {
@@ -49,6 +57,16 @@ export default function ItemEditModal({
   });
   const [saving, setSaving] = useState(false);
 
+  // Todo list (chỉ cho task)
+  const [todos, setTodos] = useState<TodoItem[]>([]);
+  const [newTodo, setNewTodo] = useState("");
+  const [addingTodo, setAddingTodo] = useState(false);
+
+  useEffect(() => {
+    if (item._type !== "task") return;
+    api(`/api/tasks/${item.id}/todos`).then(r => r.ok ? r.json() : []).then(d => setTodos(d || []));
+  }, [item.id, item._type]);
+
   async function handleSave() {
     if (!form.title.trim()) return;
     setSaving(true);
@@ -60,6 +78,38 @@ export default function ItemEditModal({
     });
     setSaving(false);
   }
+
+  async function addTodo() {
+    if (!newTodo.trim()) return;
+    setAddingTodo(true);
+    const res = await api(`/api/tasks/${item.id}/todos`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: newTodo.trim() }),
+    });
+    if (res.ok) {
+      const todo = await res.json();
+      setTodos(prev => [...prev, todo]);
+      setNewTodo("");
+    }
+    setAddingTodo(false);
+  }
+
+  async function toggleTodo(todo: TodoItem) {
+    const res = await api(`/api/tasks/${item.id}/todos/${todo.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ done: !todo.done }),
+    });
+    if (res.ok) setTodos(prev => prev.map(t => t.id === todo.id ? { ...t, done: !t.done } : t));
+  }
+
+  async function deleteTodo(todoId: string) {
+    await api(`/api/tasks/${item.id}/todos/${todoId}`, { method: "DELETE" });
+    setTodos(prev => prev.filter(t => t.id !== todoId));
+  }
+
+  const doneCount = todos.filter(t => t.done).length;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/40" onClick={onClose}>
@@ -96,7 +146,7 @@ export default function ItemEditModal({
           <div>
             <label className="text-xs text-gray-500 block mb-1">Mô tả</label>
             <textarea
-              rows={3}
+              rows={2}
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm resize-none focus:outline-none focus:border-blue-400"
               value={form.description}
               onChange={e => setForm({ ...form, description: e.target.value })}
@@ -139,6 +189,71 @@ export default function ItemEditModal({
             </button>
           </div>
         </div>
+
+        {/* Todo List — chỉ hiện cho task */}
+        {item._type === "task" && (
+          <div className="border-t border-gray-100 pt-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold text-gray-600">
+                ☑ To Do List
+                {todos.length > 0 && (
+                  <span className="ml-2 text-gray-400 font-normal">{doneCount}/{todos.length} xong</span>
+                )}
+              </p>
+            </div>
+
+            {/* Progress bar */}
+            {todos.length > 0 && (
+              <div className="w-full bg-gray-100 rounded-full h-1.5">
+                <div
+                  className="bg-green-500 h-1.5 rounded-full transition-all"
+                  style={{ width: `${(doneCount / todos.length) * 100}%` }}
+                />
+              </div>
+            )}
+
+            {/* Danh sách todo */}
+            <div className="space-y-1">
+              {todos.map(todo => (
+                <div key={todo.id} className="flex items-center gap-2 group">
+                  <button
+                    onClick={() => toggleTodo(todo)}
+                    className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${todo.done ? "bg-green-500 border-green-500" : "border-gray-300 hover:border-green-400"}`}
+                  >
+                    {todo.done && <span className="text-white text-[10px] font-bold">✓</span>}
+                  </button>
+                  <span className={`flex-1 text-sm ${todo.done ? "line-through text-gray-400" : "text-gray-700"}`}>
+                    {todo.title}
+                  </span>
+                  <button
+                    onClick={() => deleteTodo(todo.id)}
+                    className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 text-xs w-5 h-5 flex items-center justify-center transition-opacity"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* Thêm todo mới */}
+            <div className="flex gap-2 pt-1">
+              <input
+                className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-400"
+                placeholder="Thêm việc nhỏ..."
+                value={newTodo}
+                onChange={e => setNewTodo(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter") addTodo(); }}
+              />
+              <button
+                onClick={addTodo}
+                disabled={addingTodo || !newTodo.trim()}
+                className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl text-sm font-medium disabled:opacity-40 transition-colors"
+              >
+                + Thêm
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Timer */}
         {!item.done && (
