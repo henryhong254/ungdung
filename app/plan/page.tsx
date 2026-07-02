@@ -64,7 +64,11 @@ export default function PlanPage() {
     if (filterWorkType && item.workType !== filterWorkType) return false;
     // Assistant: always filter to self; Expert: filter only if a specific user is selected
     const effectiveUserId = isExpert ? filterUserId : currentUserId;
-    if (effectiveUserId && item.assignedTo?.id !== effectiveUserId) return false;
+    if (effectiveUserId) {
+      // Khi lọc theo người: item không có assignee (cũ/chưa gán) thì vẫn hiện khi đang xem chủ sở hữu
+      const assignedId = item.assignedTo?.id ?? null;
+      if (assignedId !== effectiveUserId && assignedId !== null) return false;
+    }
     if (filterDone === "todo" && item.done) return false;
     if (filterDone === "done" && !item.done) return false;
     return true;
@@ -184,14 +188,14 @@ export default function PlanPage() {
     const from = isoDate(days[0]);
     const to = isoDate(days[6]);
     Promise.all([
-      api(`/api/ideas?unscheduled=true`).then(r => r.json()),
-      api(`/api/ideas?from=${from}&to=${to}`).then(r => r.json()),
-      api(`/api/tasks?from=${from}&to=${to}`).then(r => r.json()),
-      api("/api/users").then(r => r.json()),
+      api(`/api/ideas?unscheduled=true`).then(r => r.ok ? r.json() : []),
+      api(`/api/ideas?from=${from}&to=${to}`).then(r => r.ok ? r.json() : []),
+      api(`/api/tasks?from=${from}&to=${to}`).then(r => r.ok ? r.json() : []),
+      api("/api/users").then(r => r.ok ? r.json() : []),
     ]).then(([unscheduled, scheduled, t, u]) => {
-      setIdeas([...(unscheduled || []), ...(scheduled || [])]);
-      setTasks(t || []);
-      setUsers(u || []);
+      setIdeas([...(Array.isArray(unscheduled) ? unscheduled : []), ...(Array.isArray(scheduled) ? scheduled : [])]);
+      setTasks(Array.isArray(t) ? t : []);
+      setUsers(Array.isArray(u) ? u : []);
     });
   }, [weekOffset]);
 
