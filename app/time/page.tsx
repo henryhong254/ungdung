@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { WORK_TYPES, WORK_TYPE_COLORS } from "@/lib/constants";
 import { api } from "@/lib/api";
+import ItemEditModal from "@/app/components/ItemEditModal";
 
 interface TimeEntry {
   id: string;
@@ -302,30 +303,38 @@ export default function TodayPage() {
         </div>
       )}
 
-      {/* Detail modal */}
+      {/* Detail / Edit modal */}
       {detailItem && (
-        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/40" onClick={() => setDetailItem(null)}>
-          <div className="bg-white w-full md:max-w-md rounded-t-2xl md:rounded-2xl p-5 space-y-4 max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <div className="md:hidden w-10 h-1 bg-gray-200 rounded-full mx-auto" />
-            <div>
-              {detailItem.workType && (() => {
-                const c = wtColor(detailItem.workType);
-                return (
-                  <span className={`inline-block text-xs px-2 py-0.5 rounded-full font-medium mb-2 ${c?.bg} ${c?.text}`}>
-                    {wtLabel(detailItem.workType)}
-                  </span>
-                );
-              })()}
-              <p className="text-base font-semibold text-gray-800 leading-snug">{detailItem.title}</p>
-              {detailItem.description && (
-                <p className="text-sm text-gray-500 mt-2 leading-relaxed">{detailItem.description}</p>
-              )}
-            </div>
-            <button onClick={() => setDetailItem(null)} className="w-full border border-gray-200 rounded-xl py-3 text-sm font-medium text-gray-600 hover:bg-gray-50">
-              Đóng
-            </button>
-          </div>
-        </div>
+        <ItemEditModal
+          item={detailItem}
+          users={users}
+          isExpert={isExpert}
+          timer={{
+            isRunning: !!running,
+            elapsed,
+            label: running?.note || running?.idea?.title || null,
+          }}
+          onClose={() => setDetailItem(null)}
+          onSave={async (data) => {
+            const endpoint = detailItem._type === "idea" ? `/api/ideas/${detailItem.id}` : `/api/tasks/${detailItem.id}`;
+            await api(endpoint, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+            setDetailItem(null);
+            load();
+          }}
+          onDelete={async () => {
+            const endpoint = detailItem._type === "idea" ? `/api/ideas/${detailItem.id}` : `/api/tasks/${detailItem.id}`;
+            await api(endpoint, { method: "DELETE" });
+            setDetailItem(null);
+            load();
+          }}
+          onToggleDone={() => {
+            if (detailItem._type === "idea") toggleIdea(detailItem as Idea);
+            else toggleTask(detailItem as Task);
+            setDetailItem(null);
+          }}
+          onStartTimer={startTimer}
+          onStopTimer={requestStop}
+        />
       )}
 
       {/* Edit time entry modal */}

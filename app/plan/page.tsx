@@ -5,6 +5,7 @@ import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea
 import { WORK_TYPES, WORK_TYPE_COLORS, ALL_PRODUCTS } from "@/lib/constants";
 import { useSession } from "next-auth/react";
 import { api } from "@/lib/api";
+import ItemEditModal from "@/app/components/ItemEditModal";
 
 interface User { id: string; name: string; }
 
@@ -78,11 +79,14 @@ export default function PlanPage() {
   const [showIdeaForm, setShowIdeaForm] = useState(false);
   const [ideaForm, setIdeaForm] = useState({ title: "", description: "", product: "", workType: "" });
 
-  // Edit idea
+  // Edit idea/task — shared modal
   const [editingIdea, setEditingIdea] = useState<Idea | null>(null);
   const [editIdeaForm, setEditIdeaForm] = useState({ title: "", description: "", workType: "", assignedToId: "" });
   const [savingEditIdea, setSavingEditIdea] = useState(false);
   const [editIdeaError, setEditIdeaError] = useState("");
+  // unified edit item for shared modal
+  type EditItem = (Idea & { _type: "idea" }) | (Task & { _type: "task" });
+  const [editItem, setEditItem] = useState<EditItem | null>(null);
 
   // Task form (from day column)
   const emptyTaskForm = { title: "", description: "", workType: "", assignedToId: currentUserId };
@@ -222,6 +226,7 @@ export default function PlanPage() {
   }
 
   function openEditIdea(idea: Idea) {
+    setEditItem({ ...idea, _type: "idea" });
     setEditingIdea(idea);
     setEditIdeaForm({
       title: idea.title,
@@ -290,6 +295,7 @@ export default function PlanPage() {
   }
 
   function openEditTask(task: Task) {
+    setEditItem({ ...task, _type: "task" });
     setEditingTask(task);
     setEditTaskForm({
       title: task.title,
@@ -874,6 +880,44 @@ export default function PlanPage() {
             <ModalActions onCancel={() => setEditingTask(null)} submitLabel="Lưu thay đổi" loading={savingEditTask} />
           </form>
         </Modal>
+      )}
+
+      {/* Shared Item Edit Modal */}
+      {editItem && (
+        <ItemEditModal
+          item={editItem}
+          users={users}
+          isExpert={isExpert}
+          timer={{
+            isRunning: !!timerRunning,
+            elapsed: timerElapsed,
+            label: timerRunning?.note || timerRunning?.idea?.title || null,
+          }}
+          onClose={() => { setEditItem(null); setEditingIdea(null); setEditingTask(null); }}
+          onSave={async (data) => {
+            const endpoint = editItem._type === "idea"
+              ? `/api/ideas/${editItem.id}`
+              : `/api/tasks/${editItem.id}`;
+            await api(endpoint, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+            setEditItem(null); setEditingIdea(null); setEditingTask(null);
+            load();
+          }}
+          onDelete={async () => {
+            if (editItem._type === "idea") await deleteIdea(editItem.id);
+            else await deleteTask(editItem.id);
+            setEditItem(null);
+          }}
+          onToggleDone={() => {
+            if (editItem._type === "idea") toggleIdeaDone(editItem as Idea);
+            else toggleTaskDone(editItem as Task);
+            setEditItem(null); setEditingIdea(null); setEditingTask(null);
+          }}
+          onStartTimer={(wType, ideaId, title) => {
+            setEditItem(null); setEditingIdea(null); setEditingTask(null);
+            startTimerForIdea(wType, ideaId, title);
+          }}
+          onStopTimer={stopTimer}
+        />
       )}
 
       {/* Modal assign */}
