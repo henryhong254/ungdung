@@ -703,9 +703,9 @@ export default function PlanPage() {
             </div>
             <Field label="Thời gian dự kiến">
               <div className="flex items-center gap-2">
-                <input type="time" className="input flex-1" value={ideaForm.estimatedStart} onChange={e => setIdeaForm({ ...ideaForm, estimatedStart: e.target.value })} />
+                <input type="text" inputMode="numeric" placeholder="08:00" maxLength={5} className="input flex-1" value={ideaForm.estimatedStart} onChange={e => setIdeaForm({ ...ideaForm, estimatedStart: e.target.value })} />
                 <span className="text-gray-400 text-sm shrink-0">→</span>
-                <input type="time" className="input flex-1" value={ideaForm.estimatedEnd} onChange={e => setIdeaForm({ ...ideaForm, estimatedEnd: e.target.value })} />
+                <input type="text" inputMode="numeric" placeholder="09:30" maxLength={5} className="input flex-1" value={ideaForm.estimatedEnd} onChange={e => setIdeaForm({ ...ideaForm, estimatedEnd: e.target.value })} />
               </div>
             </Field>
             {/* To Do List */}
@@ -762,9 +762,9 @@ export default function PlanPage() {
             </Field>
             <Field label="Thời gian dự kiến">
               <div className="flex items-center gap-2">
-                <input type="time" className="input flex-1" value={taskForm.estimatedStart} onChange={e => setTaskForm({ ...taskForm, estimatedStart: e.target.value })} />
+                <input type="text" inputMode="numeric" placeholder="08:00" maxLength={5} className="input flex-1" value={taskForm.estimatedStart} onChange={e => setTaskForm({ ...taskForm, estimatedStart: e.target.value })} />
                 <span className="text-gray-400 text-sm shrink-0">→</span>
-                <input type="time" className="input flex-1" value={taskForm.estimatedEnd} onChange={e => setTaskForm({ ...taskForm, estimatedEnd: e.target.value })} />
+                <input type="text" inputMode="numeric" placeholder="09:30" maxLength={5} className="input flex-1" value={taskForm.estimatedEnd} onChange={e => setTaskForm({ ...taskForm, estimatedEnd: e.target.value })} />
               </div>
             </Field>
 

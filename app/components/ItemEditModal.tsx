@@ -189,14 +189,20 @@ export default function ItemEditModal({
             <label className="text-xs text-gray-500 block mb-1">Thời gian dự kiến</label>
             <div className="flex items-center gap-2">
               <input
-                type="time"
+                type="text"
+                inputMode="numeric"
+                placeholder="08:00"
+                maxLength={5}
                 className="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-blue-400"
                 value={form.estimatedStart}
                 onChange={e => setForm({ ...form, estimatedStart: e.target.value })}
               />
               <span className="text-gray-400 text-sm shrink-0">→</span>
               <input
-                type="time"
+                type="text"
+                inputMode="numeric"
+                placeholder="09:30"
+                maxLength={5}
                 className="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-blue-400"
                 value={form.estimatedEnd}
                 onChange={e => setForm({ ...form, estimatedEnd: e.target.value })}
