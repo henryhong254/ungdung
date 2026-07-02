@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
 
   const entries = await prisma.timeEntry.findMany({
     where: {
-      userId: isExpert && userId ? userId : !isExpert ? user.id : undefined,
+      userId: (isExpert && userId) ? userId : user.id,
       product: product ? { contains: product } : undefined,
       startedAt: {
         gte: from ? new Date(from) : undefined,
