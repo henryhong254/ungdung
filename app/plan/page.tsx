@@ -94,6 +94,8 @@ export default function PlanPage() {
   const [taskForm, setTaskForm] = useState(emptyTaskForm);
   const [savingTask, setSavingTask] = useState(false);
   const [taskError, setTaskError] = useState("");
+  const [pendingTodos, setPendingTodos] = useState<string[]>([]);
+  const [pendingTodoInput, setPendingTodoInput] = useState("");
 
   // Edit task
   const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -213,6 +215,9 @@ export default function PlanPage() {
     }
   }, [currentUserId]);
 
+  const [pendingIdeaTodos, setPendingIdeaTodos] = useState<string[]>([]);
+  const [pendingIdeaTodoInput, setPendingIdeaTodoInput] = useState("");
+
   // ---- Ideas ----
   async function addIdea(e: React.FormEvent) {
     e.preventDefault();
@@ -224,6 +229,16 @@ export default function PlanPage() {
     setShowIdeaForm(false);
     if (res.ok) {
       const newIdea = await res.json();
+      if (pendingIdeaTodos.length > 0) {
+        await Promise.all(pendingIdeaTodos.map((title, i) =>
+          api(`/api/ideas/${newIdea.id}/todos`, {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ title, order: i }),
+          })
+        ));
+      }
+      setPendingIdeaTodos([]);
+      setPendingIdeaTodoInput("");
       load();
       setEditItem({ ...newIdea, _type: "idea" });
     } else {
@@ -288,7 +303,19 @@ export default function PlanPage() {
       });
       if (!res.ok) { const err = await res.json().catch(() => ({})); setTaskError(err.error || "Lỗi khi lưu"); return; }
       const newTask = await res.json();
-      setTaskForm({ ...emptyTaskForm, assignedToId: currentUserId }); setShowTaskForm(null);
+      // Lưu pending todos
+      if (pendingTodos.length > 0) {
+        await Promise.all(pendingTodos.map((title, i) =>
+          api(`/api/tasks/${newTask.id}/todos`, {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ title, order: i }),
+          })
+        ));
+      }
+      setTaskForm({ ...emptyTaskForm, assignedToId: currentUserId });
+      setPendingTodos([]);
+      setPendingTodoInput("");
+      setShowTaskForm(null);
       load();
       setEditItem({ ...newTask, _type: "task" });
     } catch { setTaskError("Không kết nối được server"); }
@@ -649,7 +676,7 @@ export default function PlanPage() {
 
       {/* Modal thêm idea */}
       {showIdeaForm && (
-        <Modal onClose={() => setShowIdeaForm(false)}>
+        <Modal onClose={() => { setShowIdeaForm(false); setPendingIdeaTodos([]); setPendingIdeaTodoInput(""); }}>
           <h2 className="font-semibold mb-4">💡 Thêm idea</h2>
           <form onSubmit={addIdea} className="space-y-3">
             <Field label="Tiêu đề *">
@@ -672,14 +699,38 @@ export default function PlanPage() {
                 </select>
               </Field>
             </div>
-            <ModalActions onCancel={() => setShowIdeaForm(false)} submitLabel="Lưu idea" submitClass="bg-amber-500 hover:bg-amber-600" />
+            {/* To Do List */}
+            <div className="border-t border-gray-100 pt-3 space-y-2">
+              <p className="text-xs font-semibold text-gray-600">☑ To Do List</p>
+              {pendingIdeaTodos.map((t, i) => (
+                <div key={i} className="flex items-center gap-2 group">
+                  <span className="w-4 h-4 rounded border border-gray-300 shrink-0" />
+                  <span className="flex-1 text-sm text-gray-700">{t}</span>
+                  <button type="button" onClick={() => setPendingIdeaTodos(prev => prev.filter((_, idx) => idx !== i))}
+                    className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 text-xs w-5 h-5 flex items-center justify-center">✕</button>
+                </div>
+              ))}
+              <div className="flex gap-2">
+                <input type="text" className="input flex-1" placeholder="Thêm việc nhỏ..."
+                  value={pendingIdeaTodoInput}
+                  onChange={e => setPendingIdeaTodoInput(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === "Enter") { e.preventDefault(); if (pendingIdeaTodoInput.trim()) { setPendingIdeaTodos(p => [...p, pendingIdeaTodoInput.trim()]); setPendingIdeaTodoInput(""); } }
+                  }} />
+                <button type="button"
+                  onClick={() => { if (pendingIdeaTodoInput.trim()) { setPendingIdeaTodos(p => [...p, pendingIdeaTodoInput.trim()]); setPendingIdeaTodoInput(""); } }}
+                  className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg text-sm font-medium">+ Thêm</button>
+              </div>
+            </div>
+
+            <ModalActions onCancel={() => { setShowIdeaForm(false); setPendingIdeaTodos([]); setPendingIdeaTodoInput(""); }} submitLabel="Lưu idea" submitClass="bg-amber-500 hover:bg-amber-600" />
           </form>
         </Modal>
       )}
 
       {/* Modal thêm task từ cột ngày */}
       {showTaskForm && (
-        <Modal onClose={() => { setShowTaskForm(null); setTaskError(""); }}>
+        <Modal onClose={() => { setShowTaskForm(null); setTaskError(""); setPendingTodos([]); setPendingTodoInput(""); }}>
           <h2 className="font-semibold mb-4">Thêm task — {showTaskForm}</h2>
           <form onSubmit={addTask} className="space-y-3">
             <Field label="Tiêu đề *">
@@ -700,8 +751,42 @@ export default function PlanPage() {
                 {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
               </select>
             </Field>
+
+            {/* To Do List */}
+            <div className="border-t border-gray-100 pt-3 space-y-2">
+              <p className="text-xs font-semibold text-gray-600">☑ To Do List</p>
+              {pendingTodos.map((t, i) => (
+                <div key={i} className="flex items-center gap-2 group">
+                  <span className="w-4 h-4 rounded border border-gray-300 shrink-0" />
+                  <span className="flex-1 text-sm text-gray-700">{t}</span>
+                  <button type="button" onClick={() => setPendingTodos(prev => prev.filter((_, idx) => idx !== i))}
+                    className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 text-xs w-5 h-5 flex items-center justify-center">✕</button>
+                </div>
+              ))}
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  className="input flex-1"
+                  placeholder="Thêm việc nhỏ..."
+                  value={pendingTodoInput}
+                  onChange={e => setPendingTodoInput(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      if (pendingTodoInput.trim()) { setPendingTodos(p => [...p, pendingTodoInput.trim()]); setPendingTodoInput(""); }
+                    }
+                  }}
+                />
+                <button type="button"
+                  onClick={() => { if (pendingTodoInput.trim()) { setPendingTodos(p => [...p, pendingTodoInput.trim()]); setPendingTodoInput(""); } }}
+                  className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg text-sm font-medium">
+                  + Thêm
+                </button>
+              </div>
+            </div>
+
             {taskError && <p className="text-xs text-red-500">{taskError}</p>}
-            <ModalActions onCancel={() => { setShowTaskForm(null); setTaskError(""); }} submitLabel="Lưu task" loading={savingTask} />
+            <ModalActions onCancel={() => { setShowTaskForm(null); setTaskError(""); setPendingTodos([]); setPendingTodoInput(""); }} submitLabel="Lưu task" loading={savingTask} />
           </form>
         </Modal>
       )}
