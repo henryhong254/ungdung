@@ -13,10 +13,15 @@ export async function GET(req: NextRequest) {
     const unscheduled = searchParams.get("unscheduled") === "true";
     const isExpert = user.role === "expert";
     const mine = searchParams.get("mine") === "true";
+    const userId = searchParams.get("userId");
+
+    let assignedToId: string | undefined;
+    if (userId && isExpert) assignedToId = userId;
+    else if (!isExpert || mine) assignedToId = user.id;
 
     const ideas = await prisma.idea.findMany({
       where: {
-        assignedToId: (isExpert && !mine) ? undefined : user.id,
+        assignedToId,
         scheduledFor: unscheduled
           ? null
           : from || to

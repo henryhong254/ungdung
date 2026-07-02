@@ -55,10 +55,10 @@ export default function PlanPage() {
   const currentUserId = (session?.user as any)?.id || "";
   const [search, setSearch] = useState("");
   const [filterWorkType, setFilterWorkType] = useState("");
-  // Expert mặc định thấy tất cả (""), assistant luôn locked theo mình
-  const [filterUserId, setFilterUserId] = useState("");
+  // Mặc định lọc theo người đang đăng nhập
+  const [filterUserId, setFilterUserId] = useState(currentUserId);
   const [filterDone, setFilterDone] = useState<"all" | "todo" | "done">("all");
-  const hasFilter = !!(search || filterWorkType || (isExpert && filterUserId) || filterDone !== "all");
+  const hasFilter = !!(search || filterWorkType || filterUserId !== currentUserId || filterDone !== "all");
 
   function matchesFilter(item: { title: string; workType: string | null; done: boolean; assignedTo: User | null }) {
     if (search && !item.title.toLowerCase().includes(search.toLowerCase())) return false;
@@ -198,9 +198,10 @@ export default function PlanPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  // Khi session load xong, set task form mặc định theo user hiện tại
+  // Khi session load xong, set filter + task form mặc định theo user hiện tại
   useEffect(() => {
     if (currentUserId) {
+      setFilterUserId(id => id === "" ? currentUserId : id);
       setTaskForm(f => f.assignedToId === "" ? { ...f, assignedToId: currentUserId } : f);
     }
   }, [currentUserId]);
@@ -482,10 +483,10 @@ export default function PlanPage() {
           <select
             value={filterUserId}
             onChange={e => setFilterUserId(e.target.value)}
-            className={`border rounded-lg px-2.5 py-1.5 text-sm outline-none ${filterUserId ? "border-blue-300 bg-blue-50 text-blue-700" : "border-gray-200"}`}
+            className={`border rounded-lg px-2.5 py-1.5 text-sm outline-none ${filterUserId !== currentUserId ? "border-blue-300 bg-blue-50 text-blue-700" : "border-gray-200"}`}
           >
-            <option value="">Tất cả mọi người</option>
-            {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+            <option value="">Tất cả</option>
+            {users.map(u => <option key={u.id} value={u.id}>{u.name === users.find(x => x.id === currentUserId)?.name ? `${u.name} (tôi)` : u.name}</option>)}
           </select>
         )}
         <select
@@ -499,7 +500,7 @@ export default function PlanPage() {
         </select>
         {hasFilter && (
           <button
-            onClick={() => { setSearch(""); setFilterWorkType(""); setFilterUserId(""); setFilterDone("all"); }}
+            onClick={() => { setSearch(""); setFilterWorkType(""); setFilterUserId(currentUserId); setFilterDone("all"); }}
             className="text-xs text-gray-400 hover:text-gray-600 px-2"
           >
             Xóa lọc

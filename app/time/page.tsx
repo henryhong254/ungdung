@@ -55,6 +55,7 @@ const wtColor = (v: string) => WORK_TYPE_COLORS[v];
 export default function TodayPage() {
   const { data: session } = useSession();
   const currentUserId = (session?.user as any)?.id || "";
+  const isExpert = (session?.user as any)?.role === "expert";
 
   const [ideas, setIdeas] = useState<Idea[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -64,6 +65,8 @@ export default function TodayPage() {
   const [showStopForm, setShowStopForm] = useState(false);
   const [stopNote, setStopNote] = useState("");
   const [stoppingId, setStoppingId] = useState<string | null>(null);
+  const [filterUserId, setFilterUserId] = useState("");
+  const [users, setUsers] = useState<{ id: string; name: string }[]>([]);
   const [editEntry, setEditEntry] = useState<TimeEntry | null>(null);
   const [editStart, setEditStart] = useState("");
   const [editEnd, setEditEnd] = useState("");
@@ -77,9 +80,11 @@ export default function TodayPage() {
     const startOfTomorrow = new Date(startOfToday); startOfTomorrow.setDate(startOfToday.getDate() + 1);
     const from = startOfToday.toISOString();
     const to = startOfTomorrow.toISOString();
+    // Expert dùng filterUserId nếu có, fallback mine=true; Assistant luôn mine=true
+    const userParam = filterUserId ? `&userId=${filterUserId}` : "&mine=true";
     Promise.all([
-      api(`/api/ideas?from=${from}&to=${to}&mine=true`).then(r => r.ok ? r.json() : []),
-      api(`/api/tasks?from=${from}&to=${to}&mine=true`).then(r => r.ok ? r.json() : []),
+      api(`/api/ideas?from=${from}&to=${to}${userParam}`).then(r => r.ok ? r.json() : []),
+      api(`/api/tasks?from=${from}&to=${to}${userParam}`).then(r => r.ok ? r.json() : []),
       api("/api/time").then(r => r.ok ? r.json() : []),
     ]).then(([i, t, e]) => {
       setIdeas(i || []);
@@ -95,9 +100,16 @@ export default function TodayPage() {
         setElapsed(0);
       }
     });
-  }, []);
+  }, [filterUserId]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    if (currentUserId) {
+      setFilterUserId(currentUserId);
+      if (isExpert) api("/api/users").then(r => r.ok ? r.json() : []).then(u => setUsers(u || []));
+    }
+  }, [currentUserId, isExpert]);
+
+  useEffect(() => { if (filterUserId) load(); }, [load, filterUserId]);
 
   useEffect(() => {
     if (running) {
@@ -216,12 +228,27 @@ export default function TodayPage() {
           <h1 className="text-lg font-semibold" style={{ color: "var(--cream)" }}>Hôm Nay</h1>
           <p className="text-xs mt-0.5" style={{ color: "var(--cream-muted)" }}>{dateLabel}</p>
         </div>
-        {todayMinutes > 0 && (
-          <div className="text-right">
-            <p className="text-base font-semibold" style={{ color: "var(--gold)" }}>{fmtDuration(todayMinutes)}</p>
-            <p className="text-xs" style={{ color: "var(--cream-muted)" }}>đã làm</p>
-          </div>
-        )}
+        <div className="flex items-center gap-3">
+          {isExpert && users.length > 1 && (
+            <select
+              value={filterUserId}
+              onChange={e => setFilterUserId(e.target.value)}
+              className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm bg-white text-gray-700 outline-none"
+            >
+              {users.map(u => (
+                <option key={u.id} value={u.id}>
+                  {u.id === currentUserId ? `${u.name} (tôi)` : u.name}
+                </option>
+              ))}
+            </select>
+          )}
+          {todayMinutes > 0 && (
+            <div className="text-right">
+              <p className="text-base font-semibold" style={{ color: "var(--gold)" }}>{fmtDuration(todayMinutes)}</p>
+              <p className="text-xs" style={{ color: "var(--cream-muted)" }}>đã làm</p>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Timer đang chạy — sticky trên mobile */}
