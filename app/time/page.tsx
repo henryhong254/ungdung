@@ -376,12 +376,13 @@ export default function TodayPage() {
                     </div>
                   ) : (
                     <button
+                      disabled={!!running}
                       onClick={() => startTimer(
                         item.workType || WORK_TYPES[0].value,
                         item._type === "idea" ? item.id : undefined,
                         item.title
                       )}
-                      className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-blue-50 active:bg-blue-100 text-blue-600 text-xs font-semibold shrink-0 touch-manipulation"
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold shrink-0 touch-manipulation transition-opacity disabled:opacity-30 disabled:cursor-not-allowed bg-blue-50 text-blue-600 active:enabled:bg-blue-100"
                     >▶ Bắt đầu</button>
                   )}
                 </div>
