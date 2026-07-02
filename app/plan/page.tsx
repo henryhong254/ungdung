@@ -201,7 +201,7 @@ export default function PlanPage() {
   // Khi session load xong, set filter + task form mặc định theo user hiện tại
   useEffect(() => {
     if (currentUserId) {
-      setFilterUserId(id => id === "" ? currentUserId : id);
+      setFilterUserId((id: string) => id === "" ? currentUserId : id);
       setTaskForm(f => f.assignedToId === "" ? { ...f, assignedToId: currentUserId } : f);
     }
   }, [currentUserId]);
