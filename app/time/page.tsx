@@ -22,7 +22,6 @@ interface Idea {
   description: string | null;
   workType: string | null;
   done: boolean;
-  doneNote: string | null;
   assignedTo: { id: string; name: string } | null;
 }
 
@@ -32,7 +31,6 @@ interface Task {
   description: string | null;
   workType: string | null;
   done: boolean;
-  doneNote: string | null;
   assignedTo: { id: string; name: string } | null;
 }
 
@@ -69,17 +67,12 @@ export default function TodayPage() {
   const [running, setRunning] = useState<TimeEntry | null>(null);
   const [elapsed, setElapsed] = useState(0);
 
-  // Stop form
   const [showStopForm, setShowStopForm] = useState(false);
   const [stopNote, setStopNote] = useState("");
   const [stoppingId, setStoppingId] = useState<string | null>(null);
 
-  // Detail modal
   const [detailItem, setDetailItem] = useState<AnyItem | null>(null);
-  const [detailDoneNote, setDetailDoneNote] = useState("");
-  const [savingDoneNote, setSavingDoneNote] = useState(false);
 
-  // Edit time entry
   const [editEntry, setEditEntry] = useState<TimeEntry | null>(null);
   const [editStart, setEditStart] = useState("");
   const [editEnd, setEditEnd] = useState("");
@@ -161,33 +154,10 @@ export default function TodayPage() {
 
   async function confirmStop() {
     if (!stoppingId) return;
-
-    // Stop the time entry
     await api(`/api/time/${stoppingId}`, {
       method: "PATCH", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ note: stopNote || undefined }),
     });
-
-    // Save doneNote to the associated idea or task
-    if (stopNote.trim() && running) {
-      const ideaId = running.idea?.id;
-      const taskTitle = running.note;
-      if (ideaId) {
-        await api(`/api/ideas/${ideaId}`, {
-          method: "PATCH", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ doneNote: stopNote.trim() }),
-        });
-      } else if (taskTitle) {
-        const matchedTask = tasks.find(t => t.title === taskTitle);
-        if (matchedTask) {
-          await api(`/api/tasks/${matchedTask.id}`, {
-            method: "PATCH", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ doneNote: stopNote.trim() }),
-          });
-        }
-      }
-    }
-
     setShowStopForm(false);
     setStopNote("");
     setStoppingId(null);
@@ -239,26 +209,6 @@ export default function TodayPage() {
       }),
     });
     setEditEntry(null);
-    load();
-  }
-
-  function openDetail(item: AnyItem) {
-    setDetailItem(item);
-    setDetailDoneNote(item.doneNote || "");
-  }
-
-  async function saveDoneNote() {
-    if (!detailItem) return;
-    setSavingDoneNote(true);
-    const endpoint = detailItem._type === "idea"
-      ? `/api/ideas/${detailItem.id}`
-      : `/api/tasks/${detailItem.id}`;
-    await api(endpoint, {
-      method: "PATCH", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ doneNote: detailDoneNote }),
-    });
-    setSavingDoneNote(false);
-    setDetailItem(null);
     load();
   }
 
@@ -324,19 +274,19 @@ export default function TodayPage() {
         </div>
       )}
 
-      {/* Stop form — bottom-sheet */}
+      {/* Stop form */}
       {showStopForm && (
         <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/40" onClick={() => setShowStopForm(false)}>
           <div className="bg-white w-full md:max-w-sm rounded-t-2xl md:rounded-2xl p-5 space-y-4" onClick={e => e.stopPropagation()}>
             <div className="md:hidden w-10 h-1 bg-gray-200 rounded-full mx-auto" />
             <div>
               <p className="font-semibold text-gray-800 mb-0.5">Bạn Đã Làm Gì? 🎯</p>
-              <p className="text-xs text-gray-400">Ghi lại để lưu vào thẻ công việc</p>
+              <p className="text-xs text-gray-400">Ghi lại những gì bạn vừa hoàn thành</p>
             </div>
             <textarea
               rows={3} autoFocus
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm resize-none focus:outline-none focus:border-blue-400"
-              placeholder="Mô tả những gì bạn đã hoàn thành trong session này..."
+              placeholder="Mô tả những gì bạn đã hoàn thành..."
               value={stopNote}
               onChange={e => setStopNote(e.target.value)}
             />
@@ -357,51 +307,23 @@ export default function TodayPage() {
         <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/40" onClick={() => setDetailItem(null)}>
           <div className="bg-white w-full md:max-w-md rounded-t-2xl md:rounded-2xl p-5 space-y-4 max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="md:hidden w-10 h-1 bg-gray-200 rounded-full mx-auto" />
-
-            {/* Title & badge */}
             <div>
-              <div className="flex items-start gap-2 mb-2">
-                {detailItem.workType && (() => {
-                  const c = wtColor(detailItem.workType);
-                  return (
-                    <span className={`mt-1 shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${c?.bg} ${c?.text}`}>
-                      {wtLabel(detailItem.workType)}
-                    </span>
-                  );
-                })()}
-                <p className="text-base font-semibold text-gray-800 leading-snug">{detailItem.title}</p>
-              </div>
+              {detailItem.workType && (() => {
+                const c = wtColor(detailItem.workType);
+                return (
+                  <span className={`inline-block text-xs px-2 py-0.5 rounded-full font-medium mb-2 ${c?.bg} ${c?.text}`}>
+                    {wtLabel(detailItem.workType)}
+                  </span>
+                );
+              })()}
+              <p className="text-base font-semibold text-gray-800 leading-snug">{detailItem.title}</p>
               {detailItem.description && (
-                <p className="text-sm text-gray-500 leading-relaxed">{detailItem.description}</p>
+                <p className="text-sm text-gray-500 mt-2 leading-relaxed">{detailItem.description}</p>
               )}
             </div>
-
-            {/* Đã làm gì */}
-            <div>
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-2">
-                📝 Ghi Chú Đã Làm Gì
-              </label>
-              <textarea
-                rows={4}
-                value={detailDoneNote}
-                onChange={e => setDetailDoneNote(e.target.value)}
-                placeholder="Ghi lại những gì đã làm được cho công việc này..."
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm resize-none focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-50"
-              />
-            </div>
-
-            <div className="flex gap-2">
-              <button onClick={() => setDetailItem(null)} className="flex-1 border border-gray-200 rounded-xl py-3 text-sm font-medium text-gray-600 hover:bg-gray-50">
-                Đóng
-              </button>
-              <button
-                onClick={saveDoneNote}
-                disabled={savingDoneNote}
-                className="flex-1 bg-amber-500 hover:bg-amber-600 disabled:opacity-40 text-white rounded-xl py-3 text-sm font-medium"
-              >
-                {savingDoneNote ? "Đang lưu..." : "Lưu ghi chú"}
-              </button>
-            </div>
+            <button onClick={() => setDetailItem(null)} className="w-full border border-gray-200 rounded-xl py-3 text-sm font-medium text-gray-600 hover:bg-gray-50">
+              Đóng
+            </button>
           </div>
         </div>
       )}
@@ -442,7 +364,7 @@ export default function TodayPage() {
         </div>
       )}
 
-      {/* To-do hôm nay */}
+      {/* Việc hôm nay */}
       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
           <p className="text-sm font-semibold text-gray-700">📋 Việc hôm nay</p>
@@ -463,48 +385,38 @@ export default function TodayPage() {
                 (item._type === "task" && running.note === item.title)
               );
               return (
-                <div
-                  key={`${item._type}-${item.id}`}
-                  className={`px-4 py-3.5 transition-colors ${isRunning ? "bg-blue-50/60" : "hover:bg-gray-50/50"}`}
+                <div key={`${item._type}-${item.id}`}
+                  className={`flex items-center gap-3 px-4 py-3.5 transition-colors ${isRunning ? "bg-blue-50/60" : ""}`}
                 >
-                  <div className="flex items-start gap-3">
-                    <button
-                      onClick={() => item._type === "idea" ? toggleIdea(item as Idea) : toggleTask(item as Task)}
-                      className="mt-0.5 w-5 h-5 rounded-md border-2 border-gray-300 active:border-green-400 shrink-0 flex items-center justify-center transition-colors touch-manipulation"
-                    />
-                    {/* Clickable title area */}
-                    <div className="flex-1 min-w-0 cursor-pointer" onClick={() => openDetail(item)}>
-                      <p className="text-sm text-gray-800 leading-snug">{item.title}</p>
-                      {item.workType && (
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          {color && <span className={`w-1.5 h-1.5 rounded-full ${color.dot}`} />}
-                          <p className="text-xs text-gray-400">{wtLabel(item.workType)}</p>
-                        </div>
-                      )}
-                      {/* Ghi chú đã làm gì */}
-                      {item.doneNote && (
-                        <div className="mt-1.5 px-2.5 py-1.5 bg-amber-50 rounded-lg border border-amber-100">
-                          <p className="text-xs text-amber-800 leading-relaxed">📝 {item.doneNote}</p>
-                        </div>
-                      )}
-                    </div>
-                    {isRunning ? (
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-xs font-mono font-semibold text-blue-500">{fmtTimer(elapsed)}</span>
-                        <button onClick={requestStop} className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-50 text-red-400 active:bg-red-100 text-xs touch-manipulation">■</button>
+                  <button
+                    onClick={() => item._type === "idea" ? toggleIdea(item as Idea) : toggleTask(item as Task)}
+                    className="w-5 h-5 rounded-md border-2 border-gray-300 active:border-green-400 shrink-0 flex items-center justify-center transition-colors touch-manipulation"
+                  />
+                  <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setDetailItem(item)}>
+                    <p className="text-sm text-gray-800 leading-snug">{item.title}</p>
+                    {item.workType && (
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        {color && <span className={`w-1.5 h-1.5 rounded-full ${color.dot}`} />}
+                        <p className="text-xs text-gray-400">{wtLabel(item.workType)}</p>
                       </div>
-                    ) : (
-                      <button
-                        disabled={!!running}
-                        onClick={() => startTimer(
-                          item.workType || WORK_TYPES[0].value,
-                          item._type === "idea" ? item.id : undefined,
-                          item.title
-                        )}
-                        className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold shrink-0 touch-manipulation transition-opacity disabled:opacity-30 disabled:cursor-not-allowed bg-blue-50 text-blue-600 active:enabled:bg-blue-100"
-                      >▶ Bắt đầu</button>
                     )}
                   </div>
+                  {isRunning ? (
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-xs font-mono font-semibold text-blue-500">{fmtTimer(elapsed)}</span>
+                      <button onClick={requestStop} className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-50 text-red-400 active:bg-red-100 text-xs touch-manipulation">■</button>
+                    </div>
+                  ) : (
+                    <button
+                      disabled={!!running}
+                      onClick={() => startTimer(
+                        item.workType || WORK_TYPES[0].value,
+                        item._type === "idea" ? item.id : undefined,
+                        item.title
+                      )}
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold shrink-0 touch-manipulation transition-opacity disabled:opacity-30 disabled:cursor-not-allowed bg-blue-50 text-blue-600 active:enabled:bg-blue-100"
+                    >▶ Bắt đầu</button>
+                  )}
                 </div>
               );
             })}
@@ -517,24 +429,18 @@ export default function TodayPage() {
                 {doneItems.map(item => {
                   const color = item.workType ? wtColor(item.workType) : null;
                   return (
-                    <div
-                      key={`${item._type}-${item.id}`}
-                      className="flex items-start gap-3 px-4 py-3 opacity-50 cursor-pointer hover:opacity-70 transition-opacity"
-                      onClick={() => openDetail(item)}
+                    <div key={`${item._type}-${item.id}`}
+                      className="flex items-center gap-3 px-4 py-3 opacity-45 cursor-pointer"
+                      onClick={() => setDetailItem(item)}
                     >
                       <button
                         onClick={e => { e.stopPropagation(); item._type === "idea" ? toggleIdea(item as Idea) : toggleTask(item as Task); }}
-                        className="mt-0.5 w-5 h-5 rounded-md bg-green-500 border-2 border-green-500 shrink-0 flex items-center justify-center touch-manipulation"
+                        className="w-5 h-5 rounded-md bg-green-500 border-2 border-green-500 shrink-0 flex items-center justify-center touch-manipulation"
                       >
                         <span className="text-white text-[10px] font-bold">✓</span>
                       </button>
-                      <div className="flex-1 min-w-0">
-                        {color && <span className={`w-1.5 h-1.5 rounded-full shrink-0 inline-block mr-1.5 ${color.dot}`} />}
-                        <span className="text-sm text-gray-500 line-through">{item.title}</span>
-                        {item.doneNote && (
-                          <p className="text-xs text-gray-400 mt-1 no-underline line-through-none">📝 {item.doneNote}</p>
-                        )}
-                      </div>
+                      {color && <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${color.dot}`} />}
+                      <p className="text-sm text-gray-500 line-through truncate">{item.title}</p>
                     </div>
                   );
                 })}
@@ -544,7 +450,7 @@ export default function TodayPage() {
         )}
       </div>
 
-      {/* Log bấm giờ hôm nay */}
+      {/* Log bấm giờ */}
       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
           <p className="text-sm font-semibold text-gray-700">⏱ Log hôm nay</p>
@@ -576,7 +482,7 @@ export default function TodayPage() {
                   )}
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
-                  <button onClick={() => openEdit(e)} className="text-gray-300 hover:text-blue-400 active:text-blue-500 text-sm w-6 h-6 flex items-center justify-center touch-manipulation" title="Chỉnh sửa">✎</button>
+                  <button onClick={() => openEdit(e)} className="text-gray-300 hover:text-blue-400 text-sm w-6 h-6 flex items-center justify-center touch-manipulation">✎</button>
                   {e.stoppedAt && (
                     <button onClick={() => deleteEntry(e.id)} className="text-gray-300 active:text-red-400 text-sm w-6 h-6 flex items-center justify-center touch-manipulation">✕</button>
                   )}

@@ -25,8 +25,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       data.done = body.done;
       data.doneAt = body.done ? new Date() : null;
     }
-    if (body.doneNote !== undefined) data.doneNote = body.doneNote || null;
-
     const task = await prisma.task.update({
       where: { id },
       data,
