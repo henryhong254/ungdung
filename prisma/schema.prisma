@@ -96,22 +96,23 @@ model TimeEntry {
 }
 
 model Idea {
-  id           String    @id @default(cuid())
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id           String     @id @default(cuid())
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
   createdById  String
-  createdBy    User      @relation("IdeaCreatedBy", fields: [createdById], references: [id])
+  createdBy    User       @relation("IdeaCreatedBy", fields: [createdById], references: [id])
   assignedToId String?
-  assignedTo   User?     @relation("IdeaAssignedTo", fields: [assignedToId], references: [id])
+  assignedTo   User?      @relation("IdeaAssignedTo", fields: [assignedToId], references: [id])
   title        String
   description  String?
   product      String?
   workType     String?
   scheduledFor DateTime?
-  done         Boolean     @default(false)
+  done         Boolean    @default(false)
   doneAt       DateTime?
-  order        Int         @default(0)
+  order        Int        @default(0)
   timeEntries  TimeEntry[]
+  todos        TodoItem[]
 
   @@map("ideas")
 }
@@ -137,8 +138,10 @@ model Task {
 model TodoItem {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
-  taskId    String
-  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId    String?
+  task      Task?    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  ideaId    String?
+  idea      Idea?    @relation(fields: [ideaId], references: [id], onDelete: Cascade)
   title     String
   done      Boolean  @default(false)
   order     Int      @default(0)

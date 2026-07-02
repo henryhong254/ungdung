@@ -63,8 +63,8 @@ export default function ItemEditModal({
   const [addingTodo, setAddingTodo] = useState(false);
 
   useEffect(() => {
-    if (item._type !== "task") return;
-    api(`/api/tasks/${item.id}/todos`).then(r => r.ok ? r.json() : []).then(d => setTodos(d || []));
+    const endpoint = item._type === "task" ? `/api/tasks/${item.id}/todos` : `/api/ideas/${item.id}/todos`;
+    api(endpoint).then(r => r.ok ? r.json() : []).then(d => setTodos(d || []));
   }, [item.id, item._type]);
 
   async function handleSave() {
@@ -82,7 +82,8 @@ export default function ItemEditModal({
   async function addTodo() {
     if (!newTodo.trim()) return;
     setAddingTodo(true);
-    const res = await api(`/api/tasks/${item.id}/todos`, {
+    const endpoint = item._type === "task" ? `/api/tasks/${item.id}/todos` : `/api/ideas/${item.id}/todos`;
+    const res = await api(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title: newTodo.trim() }),
@@ -96,7 +97,8 @@ export default function ItemEditModal({
   }
 
   async function toggleTodo(todo: TodoItem) {
-    const res = await api(`/api/tasks/${item.id}/todos/${todo.id}`, {
+    const base = item._type === "task" ? `/api/tasks/${item.id}/todos` : `/api/ideas/${item.id}/todos`;
+    const res = await api(`${base}/${todo.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ done: !todo.done }),
@@ -105,7 +107,8 @@ export default function ItemEditModal({
   }
 
   async function deleteTodo(todoId: string) {
-    await api(`/api/tasks/${item.id}/todos/${todoId}`, { method: "DELETE" });
+    const base = item._type === "task" ? `/api/tasks/${item.id}/todos` : `/api/ideas/${item.id}/todos`;
+    await api(`${base}/${todoId}`, { method: "DELETE" });
     setTodos(prev => prev.filter(t => t.id !== todoId));
   }
 
@@ -190,8 +193,8 @@ export default function ItemEditModal({
           </div>
         </div>
 
-        {/* Todo List — chỉ hiện cho task */}
-        {item._type === "task" && (
+        {/* Todo List */}
+        {(
           <div className="border-t border-gray-100 pt-3 space-y-2">
             <div className="flex items-center justify-between">
               <p className="text-xs font-semibold text-gray-600">
