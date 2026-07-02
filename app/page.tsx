@@ -174,7 +174,8 @@ function TheOneThingWidget() {
   useEffect(() => {
     if (status !== "authenticated") return;
     api(`/api/week-focus?weekStart=${weekStart}`).then(r => r.ok ? r.json() : null).then(d => {
-      if (d) { setFocus(d.focus || ""); if (!d.focus) setEditing(true); }
+      if (d?.focus) { setFocus(d.focus); setEditing(false); }
+      else { setFocus(""); setEditing(true); }
     });
   }, [status]);
 
@@ -185,9 +186,14 @@ function TheOneThingWidget() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ focus: draft, weekStart }),
     });
-    if (res.ok) { const d = await res.json(); setFocus(d.focus); }
-    setSaving(false);
-    setEditing(false);
+    if (res.ok) {
+      const d = await res.json();
+      setFocus(d.focus || "");
+      setSaving(false);
+      setEditing(false);
+    } else {
+      setSaving(false);
+    }
   }
 
   function startEdit() { setDraft(focus); setEditing(true); }
