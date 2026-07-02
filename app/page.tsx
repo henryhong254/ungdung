@@ -221,13 +221,19 @@ function TheOneThingWidget() {
   }
 
   return (
-    <div
-      className="bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl p-4 md:p-5 cursor-pointer group relative"
-      onClick={startEdit}
-    >
-      <p className="text-xs font-semibold text-amber-100 mb-2 uppercase tracking-wide">🎯 The One Thing Trong Tuần Này</p>
-      <p className="text-base md:text-lg font-semibold text-white leading-snug">{focus}</p>
-      <button className="absolute top-3 right-3 text-amber-200 hover:text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity">✎ Sửa</button>
+    <div className="bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl p-4 md:p-6 relative group">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-bold text-amber-100 uppercase tracking-widest mb-3">🎯 The One Thing Trong Tuần Này</p>
+          <p className="text-xl md:text-2xl font-bold text-white leading-snug drop-shadow-sm">{focus}</p>
+        </div>
+        <button
+          onClick={startEdit}
+          className="shrink-0 mt-0.5 px-3 py-1.5 rounded-xl bg-white/20 hover:bg-white/30 text-white text-xs font-medium transition-colors opacity-0 group-hover:opacity-100"
+        >
+          ✎ Sửa
+        </button>
+      </div>
     </div>
   );
 }
