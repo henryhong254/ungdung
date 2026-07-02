@@ -41,6 +41,7 @@ export async function POST(req: NextRequest) {
     const idea = await prisma.idea.create({
       data: {
         createdById: user.id,
+        assignedToId: body.assignedToId || user.id,
         title: body.title,
         description: body.description || null,
         product: body.product || null,
