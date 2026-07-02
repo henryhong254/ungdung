@@ -348,7 +348,10 @@ export default function TodayPage() {
           <div className="divide-y divide-gray-50">
             {todoItems.map(item => {
               const color = item.workType ? wtColor(item.workType) : null;
-              const isRunning = running && running.idea?.id === item.id;
+              const isRunning = running && (
+                running.idea?.id === item.id ||
+                (item._type === "task" && running.note === item.title)
+              );
               return (
                 <div key={`${item._type}-${item.id}`}
                   className={`flex items-center gap-3 px-4 py-3.5 transition-colors ${isRunning ? "bg-blue-50/60" : ""}`}
