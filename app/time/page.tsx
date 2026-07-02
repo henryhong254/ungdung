@@ -72,10 +72,14 @@ export default function TodayPage() {
   const today = new Date().toISOString().slice(0, 10);
 
   const load = useCallback(() => {
-    const todayStr = new Date().toISOString().slice(0, 10);
+    // Dùng local timezone để tránh lệch ngày UTC vs Vietnam (UTC+7)
+    const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0);
+    const startOfTomorrow = new Date(startOfToday); startOfTomorrow.setDate(startOfToday.getDate() + 1);
+    const from = startOfToday.toISOString();
+    const to = startOfTomorrow.toISOString();
     Promise.all([
-      api(`/api/ideas?from=${todayStr}&to=${todayStr}&mine=true`).then(r => r.ok ? r.json() : []),
-      api(`/api/tasks?from=${todayStr}&to=${todayStr}&mine=true`).then(r => r.ok ? r.json() : []),
+      api(`/api/ideas?from=${from}&to=${to}&mine=true`).then(r => r.ok ? r.json() : []),
+      api(`/api/tasks?from=${from}&to=${to}&mine=true`).then(r => r.ok ? r.json() : []),
       api("/api/time").then(r => r.ok ? r.json() : []),
     ]).then(([i, t, e]) => {
       setIdeas(i || []);
