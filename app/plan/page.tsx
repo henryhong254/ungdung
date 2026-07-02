@@ -216,13 +216,19 @@ export default function PlanPage() {
   // ---- Ideas ----
   async function addIdea(e: React.FormEvent) {
     e.preventDefault();
-    await api("/api/ideas", {
+    const res = await api("/api/ideas", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...ideaForm, workType: ideaForm.workType || null }),
     });
     setIdeaForm({ title: "", description: "", product: "", workType: "" });
     setShowIdeaForm(false);
-    load();
+    if (res.ok) {
+      const newIdea = await res.json();
+      load();
+      setEditItem({ ...newIdea, _type: "idea" });
+    } else {
+      load();
+    }
   }
 
   function openEditIdea(idea: Idea) {
@@ -281,7 +287,10 @@ export default function PlanPage() {
         body: JSON.stringify({ ...taskForm, scheduledFor: showTaskForm }),
       });
       if (!res.ok) { const err = await res.json().catch(() => ({})); setTaskError(err.error || "Lỗi khi lưu"); return; }
-      setTaskForm({ ...emptyTaskForm, assignedToId: currentUserId }); setShowTaskForm(null); load();
+      const newTask = await res.json();
+      setTaskForm({ ...emptyTaskForm, assignedToId: currentUserId }); setShowTaskForm(null);
+      load();
+      setEditItem({ ...newTask, _type: "task" });
     } catch { setTaskError("Không kết nối được server"); }
     finally { setSavingTask(false); }
   }
