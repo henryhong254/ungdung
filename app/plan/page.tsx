@@ -123,6 +123,18 @@ export default function PlanPage() {
   useEffect(() => { setLongTimerSnoozeAt(LONG_TIMER_ALERT_SECONDS); }, [timerRunning?.id]);
   const showLongTimerAlert = !!timerRunning && timerElapsed >= longTimerSnoozeAt;
 
+  // Gửi thông báo hệ thống khi cảnh báo bật lên, để thấy được cả khi không ở tab này
+  useEffect(() => {
+    if (!showLongTimerAlert) return;
+    if (typeof window === "undefined" || !("Notification" in window) || Notification.permission !== "granted") return;
+    const label = timerRunning?.note || timerRunning?.idea?.title;
+    new Notification("⏰ Vẫn đang làm việc này à?", {
+      body: `Bạn đã bấm giờ${label ? ` cho "${label}"` : ""} hơn ${Math.floor(longTimerSnoozeAt / 3600)} tiếng rồi. Việc này xong chưa?`,
+      tag: "long-timer-alert",
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showLongTimerAlert]);
+
   const loadTimer = useCallback(() => {
     return api("/api/time")
       .then(r => r.ok ? r.json() : Promise.reject(r.status))
@@ -155,7 +167,14 @@ export default function PlanPage() {
     return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(sec).padStart(2,"0")}`;
   }
 
+  function requestNotificationPermission() {
+    if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+  }
+
   async function startTimer(workType?: string) {
+    requestNotificationPermission();
     await api("/api/time", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ product: timerForm.product, workType: workType || timerForm.workType || WORK_TYPES[0].value, note: timerForm.note || null }),
@@ -177,6 +196,7 @@ export default function PlanPage() {
   }
 
   async function startTimerForIdea(workType: string, ideaId?: string, note?: string) {
+    requestNotificationPermission();
     // Stop existing timer first
     if (timerRunning) {
       await api(`/api/time/${timerRunning.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) });
