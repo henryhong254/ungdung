@@ -544,17 +544,16 @@ export default function PlanPage() {
 
 
       <DragDropContext onDragEnd={onDragEnd}>
-        <div className="flex gap-4 flex-1 min-h-0">
+        <div className="flex flex-1 gap-2 min-h-0 overflow-x-auto">
 
-          {/* Desktop only: Ideas panel fixed left */}
-          <div className="hidden md:flex flex-col w-48 shrink-0 bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <div className="px-4 py-3 border-b border-gray-100 bg-amber-50 flex items-center justify-between shrink-0">
+          {/* Ideas: pinned & fixed-width on mobile, a normal flex column on desktop */}
+          <div className="flex-none w-32 sticky left-0 z-10 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.15)] md:static md:z-auto md:shadow-none md:flex-1 md:min-w-32 flex flex-col bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="px-3 py-2 md:px-4 md:py-3 border-b border-gray-100 bg-amber-50 flex items-center justify-between shrink-0">
               <span className="text-sm font-medium text-amber-800">💡 Ideas</span>
               {isExpert && (
                 <button onClick={() => setShowIdeaForm(true)} className="text-xs text-amber-600 hover:underline">+ Thêm</button>
               )}
             </div>
-
             <Droppable droppableId="backlog">
               {(provided, snapshot) => (
                 <div
@@ -581,50 +580,12 @@ export default function PlanPage() {
               )}
             </Droppable>
           </div>
-
-          {/* Scrollable board: on mobile includes Ideas as first column */}
-          <div className="flex flex-1 gap-2 overflow-x-auto">
-
-            {/* Mobile only: Ideas pinned to the left while day columns scroll */}
-            <div className="md:hidden flex-none w-32 sticky left-0 z-10 flex flex-col bg-white rounded-xl border border-gray-200 overflow-hidden shadow-[4px_0_8px_-4px_rgba(0,0,0,0.15)]">
-              <div className="px-3 py-2 border-b border-gray-100 bg-amber-50 flex items-center justify-between shrink-0">
-                <span className="text-sm font-medium text-amber-800">💡 Ideas</span>
-                {isExpert && (
-                  <button onClick={() => setShowIdeaForm(true)} className="text-xs text-amber-600 hover:underline">+ Thêm</button>
-                )}
-              </div>
-              <Droppable droppableId="backlog-mobile">
-                {(provided, snapshot) => (
-                  <div
-                    ref={provided.innerRef} {...provided.droppableProps}
-                    className={`flex-1 overflow-y-auto p-2 space-y-1.5 ${snapshot.isDraggingOver ? "bg-amber-50/40" : ""}`}
-                  >
-                    {unscheduledIdeas.length === 0 && (
-                      <p className="text-xs text-gray-400 p-3 text-center">Chưa có idea.</p>
-                    )}
-                    {unscheduledIdeas.map((idea, index) => (
-                      <Draggable key={`m-${idea.id}`} draggableId={`idea-${idea.id}`} index={index} isDragDisabled={!isExpert}>
-                        {(provided, snapshot) => (
-                          <div
-                            ref={provided.innerRef} {...(provided.draggableProps as any)} {...provided.dragHandleProps}
-                            className={snapshot.isDragging ? "shadow-lg" : ""}
-                          >
-                            <IdeaCard idea={idea} isExpert={isExpert} onClick={() => openEditIdea(idea)} onToggle={toggleIdeaDone} onStartTimer={quickStartTimer} onStopTimer={stopTimer} timerRunning={timerRunning} timerElapsed={timerElapsed} />
-                          </div>
-                        )}
-                      </Draggable>
-                    ))}
-                    {provided.placeholder}
-                  </div>
-                )}
-              </Droppable>
-            </div>
-            {weekDays.map(day => {
+          {weekDays.map(day => {
               const dateStr = isoDate(day);
               const dayIdeas = ideasForDay(day);
               const dayTasks = tasksForDay(day);
               return (
-                <div key={dateStr} className={`${isToday(day) ? "flex-[2]" : "flex-1"} min-w-[140px] md:min-w-32 flex flex-col bg-white rounded-xl border border-gray-200 overflow-hidden`}>
+                <div key={dateStr} className={`${isToday(day) ? "flex-[1.5]" : "flex-1"} min-w-[140px] md:min-w-32 flex flex-col bg-white rounded-xl border border-gray-200 overflow-hidden`}>
                   <div className={`px-3 py-2 border-b border-gray-100 shrink-0 ${isToday(day) ? "bg-blue-600" : "bg-gray-50"}`}>
                     <p className={`text-xs font-medium text-center ${isToday(day) ? "text-white" : "text-gray-600"}`}>{dayLabel(day)}</p>
                   </div>
@@ -675,7 +636,6 @@ export default function PlanPage() {
                 </div>
               );
             })}
-          </div>
         </div>
       </DragDropContext>
 
