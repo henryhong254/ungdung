@@ -117,6 +117,12 @@ export default function PlanPage() {
   const [timerForm, setTimerForm] = useState({ product: "Chung (không gắn sản phẩm)", workType: "", note: "" });
   const timerInterval = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Cảnh báo nếu bấm giờ quá lâu (mặc định 2 tiếng, "vẫn đang làm" sẽ nhắc lại sau 1 tiếng nữa)
+  const LONG_TIMER_ALERT_SECONDS = 2 * 60 * 60;
+  const [longTimerSnoozeAt, setLongTimerSnoozeAt] = useState(LONG_TIMER_ALERT_SECONDS);
+  useEffect(() => { setLongTimerSnoozeAt(LONG_TIMER_ALERT_SECONDS); }, [timerRunning?.id]);
+  const showLongTimerAlert = !!timerRunning && timerElapsed >= longTimerSnoozeAt;
+
   const loadTimer = useCallback(() => {
     return api("/api/time")
       .then(r => r.ok ? r.json() : Promise.reject(r.status))
@@ -840,6 +846,31 @@ export default function PlanPage() {
               className="w-full text-xs text-gray-400 hover:text-gray-600 py-1"
             >
               Bỏ qua, không giao cụ thể
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {/* Cảnh báo bấm giờ quá lâu */}
+      {showLongTimerAlert && timerRunning && (
+        <Modal onClose={() => setLongTimerSnoozeAt(e => e + 3600)}>
+          <h2 className="font-semibold mb-2">⏰ Vẫn đang làm việc này à?</h2>
+          <p className="text-sm text-gray-600 mb-4">
+            Bạn đã bấm giờ{(timerRunning.note || timerRunning.idea?.title) ? ` cho "${timerRunning.note || timerRunning.idea?.title}"` : ""} được{" "}
+            <span className="font-mono font-semibold text-gray-800">{fmtTimer(timerElapsed)}</span> rồi. Việc này xong chưa?
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setLongTimerSnoozeAt(e => e + 3600)}
+              className="flex-1 border border-gray-200 rounded-xl py-3 text-sm font-medium text-gray-600 hover:bg-gray-50"
+            >
+              Vẫn đang làm
+            </button>
+            <button
+              onClick={stopTimer}
+              className="flex-1 bg-blue-600 text-white rounded-xl py-3 text-sm font-medium hover:bg-blue-700"
+            >
+              Đã xong, dừng bấm giờ
             </button>
           </div>
         </Modal>
