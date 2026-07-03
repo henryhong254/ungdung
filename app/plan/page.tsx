@@ -547,7 +547,7 @@ export default function PlanPage() {
         <div className="flex gap-4 flex-1 min-h-0">
 
           {/* Desktop only: Ideas panel fixed left */}
-          <div className="hidden md:flex flex-col w-64 bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="hidden md:flex flex-col w-48 shrink-0 bg-white rounded-xl border border-gray-200 overflow-hidden">
             <div className="px-4 py-3 border-b border-gray-100 bg-amber-50 flex items-center justify-between shrink-0">
               <span className="text-sm font-medium text-amber-800">💡 Ideas</span>
               {isExpert && (
@@ -624,7 +624,7 @@ export default function PlanPage() {
               const dayIdeas = ideasForDay(day);
               const dayTasks = tasksForDay(day);
               return (
-                <div key={dateStr} className="flex-1 min-w-[140px] md:min-w-32 flex flex-col bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div key={dateStr} className={`${isToday(day) ? "flex-[2]" : "flex-1"} min-w-[140px] md:min-w-32 flex flex-col bg-white rounded-xl border border-gray-200 overflow-hidden`}>
                   <div className={`px-3 py-2 border-b border-gray-100 shrink-0 ${isToday(day) ? "bg-blue-600" : "bg-gray-50"}`}>
                     <p className={`text-xs font-medium text-center ${isToday(day) ? "text-white" : "text-gray-600"}`}>{dayLabel(day)}</p>
                   </div>
