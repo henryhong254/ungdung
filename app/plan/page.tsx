@@ -5,6 +5,7 @@ import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea
 import { WORK_TYPES, WORK_TYPE_COLORS, ALL_PRODUCTS } from "@/lib/constants";
 import { useSession } from "next-auth/react";
 import { api } from "@/lib/api";
+import { formatTimeInput } from "@/lib/utils";
 import ItemEditModal from "@/app/components/ItemEditModal";
 
 interface User { id: string; name: string; }
@@ -79,7 +80,8 @@ export default function PlanPage() {
 
   // Idea form
   const [showIdeaForm, setShowIdeaForm] = useState(false);
-  const [ideaForm, setIdeaForm] = useState({ title: "", description: "", product: "", workType: "", estimatedStart: "", estimatedEnd: "" });
+  const emptyIdeaForm = { title: "", description: "", product: "", workType: "", assignedToId: currentUserId, estimatedStart: "", estimatedEnd: "" };
+  const [ideaForm, setIdeaForm] = useState(emptyIdeaForm);
 
   // Edit idea/task — shared modal
   const [editingIdea, setEditingIdea] = useState<Idea | null>(null);
@@ -214,6 +216,7 @@ export default function PlanPage() {
     if (currentUserId) {
       setFilterUserId((id: string) => id === "" ? currentUserId : id);
       setTaskForm(f => f.assignedToId === "" ? { ...f, assignedToId: currentUserId } : f);
+      setIdeaForm(f => f.assignedToId === "" ? { ...f, assignedToId: currentUserId } : f);
     }
   }, [currentUserId]);
 
@@ -227,7 +230,7 @@ export default function PlanPage() {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...ideaForm, workType: ideaForm.workType || null }),
     });
-    setIdeaForm({ title: "", description: "", product: "", workType: "", estimatedStart: "", estimatedEnd: "" });
+    setIdeaForm(emptyIdeaForm);
     setShowIdeaForm(false);
     if (res.ok) {
       const newIdea = await res.json();
@@ -582,8 +585,8 @@ export default function PlanPage() {
           {/* Scrollable board: on mobile includes Ideas as first column */}
           <div className="flex flex-1 gap-2 overflow-x-auto">
 
-            {/* Mobile only: Ideas as first scrollable column */}
-            <div className="md:hidden flex-none w-36 flex flex-col bg-white rounded-xl border border-gray-200 overflow-hidden">
+            {/* Mobile only: Ideas pinned to the left while day columns scroll */}
+            <div className="md:hidden flex-none w-32 sticky left-0 z-10 flex flex-col bg-white rounded-xl border border-gray-200 overflow-hidden shadow-[4px_0_8px_-4px_rgba(0,0,0,0.15)]">
               <div className="px-3 py-2 border-b border-gray-100 bg-amber-50 flex items-center justify-between shrink-0">
                 <span className="text-sm font-medium text-amber-800">💡 Ideas</span>
                 {isExpert && (
@@ -701,11 +704,17 @@ export default function PlanPage() {
                 </select>
               </Field>
             </div>
+            <Field label="Giao cho">
+              <select className="input" value={ideaForm.assignedToId} onChange={e => setIdeaForm({ ...ideaForm, assignedToId: e.target.value })}>
+                <option value="">-- Chưa giao --</option>
+                {users.map(u => <option key={u.id} value={u.id}>{u.id === currentUserId ? `${u.name} (tôi)` : u.name}</option>)}
+              </select>
+            </Field>
             <Field label="Thời gian dự kiến">
               <div className="flex items-center gap-2">
-                <input type="text" inputMode="numeric" placeholder="08:00" maxLength={5} className="input flex-1" value={ideaForm.estimatedStart} onChange={e => setIdeaForm({ ...ideaForm, estimatedStart: e.target.value })} />
+                <input type="text" inputMode="numeric" placeholder="08:00" maxLength={5} className="input flex-1" value={ideaForm.estimatedStart} onChange={e => setIdeaForm({ ...ideaForm, estimatedStart: formatTimeInput(e.target.value) })} />
                 <span className="text-gray-400 text-sm shrink-0">→</span>
-                <input type="text" inputMode="numeric" placeholder="09:30" maxLength={5} className="input flex-1" value={ideaForm.estimatedEnd} onChange={e => setIdeaForm({ ...ideaForm, estimatedEnd: e.target.value })} />
+                <input type="text" inputMode="numeric" placeholder="09:30" maxLength={5} className="input flex-1" value={ideaForm.estimatedEnd} onChange={e => setIdeaForm({ ...ideaForm, estimatedEnd: formatTimeInput(e.target.value) })} />
               </div>
             </Field>
             {/* To Do List */}
@@ -762,9 +771,9 @@ export default function PlanPage() {
             </Field>
             <Field label="Thời gian dự kiến">
               <div className="flex items-center gap-2">
-                <input type="text" inputMode="numeric" placeholder="08:00" maxLength={5} className="input flex-1" value={taskForm.estimatedStart} onChange={e => setTaskForm({ ...taskForm, estimatedStart: e.target.value })} />
+                <input type="text" inputMode="numeric" placeholder="08:00" maxLength={5} className="input flex-1" value={taskForm.estimatedStart} onChange={e => setTaskForm({ ...taskForm, estimatedStart: formatTimeInput(e.target.value) })} />
                 <span className="text-gray-400 text-sm shrink-0">→</span>
-                <input type="text" inputMode="numeric" placeholder="09:30" maxLength={5} className="input flex-1" value={taskForm.estimatedEnd} onChange={e => setTaskForm({ ...taskForm, estimatedEnd: e.target.value })} />
+                <input type="text" inputMode="numeric" placeholder="09:30" maxLength={5} className="input flex-1" value={taskForm.estimatedEnd} onChange={e => setTaskForm({ ...taskForm, estimatedEnd: formatTimeInput(e.target.value) })} />
               </div>
             </Field>
 

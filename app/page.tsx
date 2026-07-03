@@ -157,6 +157,12 @@ interface Idea {
   title: string;
   workType: string | null;
   product: string | null;
+  assignedTo: { id: string; name: string } | null;
+}
+
+interface DashUser {
+  id: string;
+  name: string;
 }
 
 function TheOneThingWidget() {
@@ -247,11 +253,14 @@ function TheOneThingWidget() {
 function IdeaWidget() {
   const [title, setTitle] = useState("");
   const [workType, setWorkType] = useState("");
+  const [assigneeId, setAssigneeId] = useState("");
   const [saving, setSaving] = useState(false);
   const [ideas, setIdeas] = useState<Idea[]>([]);
+  const [users, setUsers] = useState<DashUser[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const { status } = useSession();
+  const { data: session, status } = useSession();
+  const currentUserId = (session?.user as any)?.id || "";
 
   async function loadIdeas() {
     const res = await api("/api/ideas?unscheduled=true");
@@ -260,7 +269,13 @@ function IdeaWidget() {
     setIdeas(Array.isArray(data) ? data : []);
   }
 
-  useEffect(() => { if (status === "authenticated") loadIdeas(); }, [status]);
+  useEffect(() => {
+    if (status !== "authenticated") return;
+    loadIdeas();
+    api("/api/users").then(r => r.ok ? r.json() : []).then(u => setUsers(Array.isArray(u) ? u : []));
+  }, [status]);
+
+  useEffect(() => { setAssigneeId(id => id === "" ? currentUserId : id); }, [currentUserId]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -269,7 +284,7 @@ function IdeaWidget() {
     await api("/api/ideas", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: title.trim(), workType: workType || null }),
+      body: JSON.stringify({ title: title.trim(), workType: workType || null, assignedToId: assigneeId || undefined }),
     });
     setTitle("");
     setWorkType("");
@@ -324,6 +339,19 @@ function IdeaWidget() {
               );
             })}
           </div>
+          {users.length > 1 && (
+            <select
+              value={assigneeId}
+              onChange={e => setAssigneeId(e.target.value)}
+              className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs text-gray-500 outline-none w-fit"
+            >
+              {users.map(u => (
+                <option key={u.id} value={u.id}>
+                  Giao cho: {u.id === currentUserId ? `${u.name} (tôi)` : u.name}
+                </option>
+              ))}
+            </select>
+          )}
         </form>
       </div>
 
@@ -344,7 +372,13 @@ function IdeaWidget() {
               )}
               <div className="flex-1 min-w-0">
                 <p className="text-sm text-gray-800 truncate">{idea.title}</p>
-                {wtLabel && <p className="text-xs text-gray-400">{wtLabel}</p>}
+                {(wtLabel || idea.assignedTo) && (
+                  <p className="text-xs text-gray-400">
+                    {wtLabel}
+                    {wtLabel && idea.assignedTo && " · "}
+                    {idea.assignedTo && (idea.assignedTo.id === currentUserId ? "Tôi" : idea.assignedTo.name)}
+                  </p>
+                )}
               </div>
               <button
                 onClick={() => deleteIdea(idea.id)}

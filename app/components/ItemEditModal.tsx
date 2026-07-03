@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { WORK_TYPES } from "@/lib/constants";
 import { api } from "@/lib/api";
+import { formatTimeInput } from "@/lib/utils";
 
 export interface EditableItem {
   id: string;
@@ -195,7 +196,7 @@ export default function ItemEditModal({
                 maxLength={5}
                 className="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-blue-400"
                 value={form.estimatedStart}
-                onChange={e => setForm({ ...form, estimatedStart: e.target.value })}
+                onChange={e => setForm({ ...form, estimatedStart: formatTimeInput(e.target.value) })}
               />
               <span className="text-gray-400 text-sm shrink-0">→</span>
               <input
@@ -205,7 +206,7 @@ export default function ItemEditModal({
                 maxLength={5}
                 className="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-blue-400"
                 value={form.estimatedEnd}
-                onChange={e => setForm({ ...form, estimatedEnd: e.target.value })}
+                onChange={e => setForm({ ...form, estimatedEnd: formatTimeInput(e.target.value) })}
               />
             </div>
           </div>
