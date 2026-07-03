@@ -14,6 +14,8 @@ export interface EditableItem {
   assignedTo: { id: string; name: string } | null;
   estimatedStart?: string | null;
   estimatedEnd?: string | null;
+  doneNote?: string | null;
+  mood?: string | null;
   _type: "idea" | "task";
 }
 
@@ -39,7 +41,7 @@ interface ItemEditModalProps {
   onSave: (data: { title: string; description: string | null; workType: string | null; assignedToId: string | null; estimatedStart?: string | null; estimatedEnd?: string | null }) => Promise<void>;
   onDelete: () => Promise<void>;
   onToggleDone: () => void;
-  onStartTimer: (workType: string, ideaId?: string, title?: string) => void;
+  onStartTimer: (workType: string, ideaId?: string, title?: string, taskId?: string) => void;
   onStopTimer: () => void;
 }
 
@@ -289,6 +291,24 @@ export default function ItemEditModal({
           </div>
         )}
 
+        {/* Checkout sau khi dừng bấm giờ */}
+        {(item.doneNote || item.mood) && (
+          <div className="border-t border-gray-100 pt-3 space-y-2">
+            {item.doneNote && (
+              <div>
+                <p className="text-xs font-semibold text-gray-500 mb-0.5">📝 Ghi chú lúc dừng giờ</p>
+                <p className="text-sm text-gray-700 whitespace-pre-wrap">{item.doneNote}</p>
+              </div>
+            )}
+            {item.mood && (
+              <div>
+                <p className="text-xs font-semibold text-gray-500 mb-0.5">🙂 Cảm xúc sau khi làm</p>
+                <p className="text-sm text-gray-700 whitespace-pre-wrap">{item.mood}</p>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Timer */}
         {!item.done && (
           <div className="border-t border-gray-100 pt-3">
@@ -317,8 +337,9 @@ export default function ItemEditModal({
                 onClick={() => {
                   const wType = form.workType || item.workType || WORK_TYPES[0].value;
                   const ideaId = item._type === "idea" ? item.id : undefined;
+                  const taskId = item._type === "task" ? item.id : undefined;
                   onClose();
-                  onStartTimer(wType, ideaId, item.title);
+                  onStartTimer(wType, ideaId, item.title, taskId);
                 }}
                 className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-blue-200 text-blue-600 hover:bg-blue-50 text-sm font-medium transition-colors"
               >

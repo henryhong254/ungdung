@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
         lte: to ? new Date(to) : undefined,
       },
     },
-    include: { user: { select: { name: true, role: true } }, idea: { select: { id: true, title: true } } },
+    include: { user: { select: { name: true, role: true } }, idea: { select: { id: true, title: true } }, task: { select: { id: true, title: true } } },
     orderBy: { startedAt: "desc" },
   });
 
@@ -38,12 +38,13 @@ export async function POST(req: NextRequest) {
     data: {
       userId: user.id,
       ideaId: body.ideaId || null,
+      taskId: body.taskId || null,
       product: body.product,
       workType: body.workType,
       note: body.note || null,
       startedAt: new Date(),
     },
-    include: { idea: { select: { id: true, title: true } } },
+    include: { idea: { select: { id: true, title: true } }, task: { select: { id: true, title: true } } },
   });
   return NextResponse.json(entry, { status: 201 });
 }

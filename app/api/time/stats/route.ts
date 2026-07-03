@@ -11,9 +11,10 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const from = searchParams.get("from") ? new Date(searchParams.get("from")!) : new Date(Date.now() - 30 * 86400000);
   const to = searchParams.get("to") ? new Date(searchParams.get("to")!) : new Date();
+  const userId = searchParams.get("userId");
 
   const entries = await prisma.timeEntry.findMany({
-    where: { startedAt: { gte: from, lte: to }, stoppedAt: { not: null } },
+    where: { startedAt: { gte: from, lte: to }, stoppedAt: { not: null }, userId: userId || undefined },
     include: { user: { select: { name: true, role: true } } },
   });
 

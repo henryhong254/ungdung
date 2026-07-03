@@ -1,0 +1,3 @@
+ALTER TABLE "ideas" ADD COLUMN "mood" TEXT;
+ALTER TABLE "tasks" ADD COLUMN "mood" TEXT;
+ALTER TABLE "time_entries" ADD COLUMN "taskId" TEXT REFERENCES "tasks"("id") ON DELETE SET NULL;

@@ -16,6 +16,7 @@ interface Idea {
   scheduledFor: string | null; done: boolean;
   assignedTo: User | null; order: number;
   estimatedStart?: string | null; estimatedEnd?: string | null;
+  doneNote?: string | null; mood?: string | null;
 }
 
 interface Task {
@@ -23,6 +24,7 @@ interface Task {
   workType: string | null; scheduledFor: string | null;
   done: boolean; assignedTo: User | null; order: number;
   estimatedStart?: string | null; estimatedEnd?: string | null;
+  doneNote?: string | null; mood?: string | null;
 }
 
 function getWeekDays(offset = 0) {
@@ -110,12 +112,17 @@ export default function PlanPage() {
   const [assignModal, setAssignModal] = useState<{ id: string; type: "idea" | "task"; date: string } | null>(null);
 
   // ---- Timer ----
-  interface TimerEntry { id: string; product: string; workType: string; note: string | null; startedAt: string; ideaId?: string | null; idea?: { id: string; title: string } | null; }
+  interface TimerEntry { id: string; product: string; workType: string; note: string | null; startedAt: string; ideaId?: string | null; idea?: { id: string; title: string } | null; taskId?: string | null; task?: { id: string; title: string } | null; }
   const [timerRunning, setTimerRunning] = useState<TimerEntry | null>(null);
   const [timerElapsed, setTimerElapsed] = useState(0);
   const [showTimerForm, setShowTimerForm] = useState(false);
   const [timerForm, setTimerForm] = useState({ product: "Chung (không gắn sản phẩm)", workType: "", note: "" });
   const timerInterval = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Checkout sau khi dừng bấm giờ 1 idea/task: hỏi ghi chú + cảm xúc, lưu vào thẻ
+  const [checkoutModal, setCheckoutModal] = useState<{ type: "idea" | "task"; id: string; title: string } | null>(null);
+  const [checkoutForm, setCheckoutForm] = useState({ note: "", mood: "" });
+  const [savingCheckout, setSavingCheckout] = useState(false);
 
   // Cảnh báo nếu bấm giờ quá lâu (mặc định 2 tiếng, "vẫn đang làm" sẽ nhắc lại sau 1 tiếng nữa)
   const LONG_TIMER_ALERT_SECONDS = 2 * 60 * 60;
@@ -187,7 +194,31 @@ export default function PlanPage() {
   async function stopTimer() {
     if (!timerRunning) return;
     await api(`/api/time/${timerRunning.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) });
+    const finished = timerRunning;
     loadTimer();
+    if (finished.ideaId) {
+      const idea = ideas.find(i => i.id === finished.ideaId);
+      setCheckoutForm({ note: "", mood: "" });
+      setCheckoutModal({ type: "idea", id: finished.ideaId, title: idea?.title || finished.idea?.title || finished.note || "" });
+    } else if (finished.taskId) {
+      const task = tasks.find(t => t.id === finished.taskId);
+      setCheckoutForm({ note: "", mood: "" });
+      setCheckoutModal({ type: "task", id: finished.taskId, title: task?.title || finished.task?.title || finished.note || "" });
+    }
+  }
+
+  async function submitCheckout(e: React.FormEvent) {
+    e.preventDefault();
+    if (!checkoutModal) return;
+    setSavingCheckout(true);
+    const endpoint = checkoutModal.type === "idea" ? `/api/ideas/${checkoutModal.id}` : `/api/tasks/${checkoutModal.id}`;
+    await api(endpoint, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ doneNote: checkoutForm.note || null, mood: checkoutForm.mood || null }),
+    });
+    setSavingCheckout(false);
+    setCheckoutModal(null);
+    load();
   }
 
   function quickStartTimer(workType: string, ideaId?: string) {
@@ -195,7 +226,7 @@ export default function PlanPage() {
     startTimerForIdea(workType, ideaId);
   }
 
-  async function startTimerForIdea(workType: string, ideaId?: string, note?: string) {
+  async function startTimerForIdea(workType: string, ideaId?: string, note?: string, taskId?: string) {
     requestNotificationPermission();
     // Stop existing timer first
     if (timerRunning) {
@@ -209,6 +240,7 @@ export default function PlanPage() {
         workType: wt,
         note: note || timerForm.note || null,
         ideaId: ideaId || null,
+        taskId: taskId || null,
       }),
     });
     if (!res.ok) {
@@ -270,11 +302,8 @@ export default function PlanPage() {
       }
       setPendingIdeaTodos([]);
       setPendingIdeaTodoInput("");
-      load();
-      setEditItem({ ...newIdea, _type: "idea" });
-    } else {
-      load();
     }
+    load();
   }
 
   function openEditIdea(idea: Idea) {
@@ -348,7 +377,6 @@ export default function PlanPage() {
       setPendingTodoInput("");
       setShowTaskForm(null);
       load();
-      setEditItem({ ...newTask, _type: "task" });
     } catch { setTaskError("Không kết nối được server"); }
     finally { setSavingTask(false); }
   }
@@ -642,7 +670,7 @@ export default function PlanPage() {
                           <Draggable key={`task-${task.id}`} draggableId={`task-${task.id}`} index={dayIdeas.length + i} isDragDisabled={!isExpert}>
                             {(provided, snapshot) => (
                               <div ref={provided.innerRef} {...(provided.draggableProps as any)} {...provided.dragHandleProps} className={snapshot.isDragging ? "shadow-lg" : ""}>
-                                <TaskCard task={task} isExpert={isExpert} onClick={() => openEditTask(task)} onToggle={toggleTaskDone} timerRunning={timerRunning} timerElapsed={timerElapsed} onStartTimer={(title, workType) => startTimerForIdea(workType, undefined, title)} onStopTimer={stopTimer} />
+                                <TaskCard task={task} isExpert={isExpert} onClick={() => openEditTask(task)} onToggle={toggleTaskDone} timerRunning={timerRunning} timerElapsed={timerElapsed} onStartTimer={(title, workType) => startTimerForIdea(workType, undefined, title, task.id)} onStopTimer={stopTimer} />
                               </div>
                             )}
                           </Draggable>
@@ -832,9 +860,9 @@ export default function PlanPage() {
             else toggleTaskDone(editItem as Task);
             setEditItem(null); setEditingIdea(null); setEditingTask(null);
           }}
-          onStartTimer={(wType, ideaId, title) => {
+          onStartTimer={(wType, ideaId, title, taskId) => {
             setEditItem(null); setEditingIdea(null); setEditingTask(null);
-            startTimerForIdea(wType, ideaId, title);
+            startTimerForIdea(wType, ideaId, title, taskId);
           }}
           onStopTimer={stopTimer}
         />
@@ -893,6 +921,34 @@ export default function PlanPage() {
               Đã xong, dừng bấm giờ
             </button>
           </div>
+        </Modal>
+      )}
+
+      {/* Checkout sau khi dừng bấm giờ */}
+      {checkoutModal && (
+        <Modal onClose={() => setCheckoutModal(null)}>
+          <h2 className="font-semibold mb-1">✅ Đã dừng bấm giờ</h2>
+          {checkoutModal.title && <p className="text-sm text-gray-500 mb-4">"{checkoutModal.title}"</p>}
+          <form onSubmit={submitCheckout} className="space-y-3">
+            <Field label="Ghi chú bạn đã làm gì">
+              <textarea
+                rows={2}
+                autoFocus
+                className="input resize-none"
+                value={checkoutForm.note}
+                onChange={e => setCheckoutForm({ ...checkoutForm, note: e.target.value })}
+              />
+            </Field>
+            <Field label="Check-out cảm xúc của bạn sau khi xong task là?">
+              <textarea
+                rows={2}
+                className="input resize-none"
+                value={checkoutForm.mood}
+                onChange={e => setCheckoutForm({ ...checkoutForm, mood: e.target.value })}
+              />
+            </Field>
+            <ModalActions onCancel={() => setCheckoutModal(null)} submitLabel="Lưu" loading={savingCheckout} />
+          </form>
         </Modal>
       )}
     </div>

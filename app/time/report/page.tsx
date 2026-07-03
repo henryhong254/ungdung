@@ -28,11 +28,18 @@ function workTypeLabel(v: string) {
 export default function TimeReportPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [range, setRange] = useState("30");
+  const [filterUserId, setFilterUserId] = useState("");
+  const [users, setUsers] = useState<{ id: string; name: string }[]>([]);
+
+  useEffect(() => {
+    api("/api/users").then(r => r.ok ? r.json() : []).then(u => setUsers(Array.isArray(u) ? u : []));
+  }, []);
 
   const load = useCallback(() => {
     const from = new Date(Date.now() - Number(range) * 86400000).toISOString();
-    api(`/api/time/stats?from=${from}`).then((r) => r.json()).then(setStats);
-  }, [range]);
+    const userParam = filterUserId ? `&userId=${filterUserId}` : "";
+    api(`/api/time/stats?from=${from}${userParam}`).then((r) => r.json()).then(setStats);
+  }, [range, filterUserId]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -45,14 +52,23 @@ export default function TimeReportPage() {
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Báo cáo giờ làm việc</h1>
-        <select
-          className="border border-gray-200 rounded-lg px-3 py-2 text-sm"
-          value={range} onChange={(e) => setRange(e.target.value)}
-        >
-          <option value="7">7 ngày qua</option>
-          <option value="30">30 ngày qua</option>
-          <option value="90">3 tháng qua</option>
-        </select>
+        <div className="flex items-center gap-2">
+          <select
+            className="border border-gray-200 rounded-lg px-3 py-2 text-sm"
+            value={filterUserId} onChange={(e) => setFilterUserId(e.target.value)}
+          >
+            <option value="">Tất cả mọi người</option>
+            {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+          </select>
+          <select
+            className="border border-gray-200 rounded-lg px-3 py-2 text-sm"
+            value={range} onChange={(e) => setRange(e.target.value)}
+          >
+            <option value="7">7 ngày qua</option>
+            <option value="30">30 ngày qua</option>
+            <option value="90">3 tháng qua</option>
+          </select>
+        </div>
       </div>
 
       <div className="grid grid-cols-3 gap-4">

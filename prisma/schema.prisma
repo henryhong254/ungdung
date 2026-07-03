@@ -85,6 +85,8 @@ model TimeEntry {
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   ideaId      String?
   idea        Idea?     @relation(fields: [ideaId], references: [id], onDelete: SetNull)
+  taskId      String?
+  task        Task?     @relation(fields: [taskId], references: [id], onDelete: SetNull)
   product     String
   workType    String
   note        String?
@@ -113,6 +115,8 @@ model Idea {
   order          Int        @default(0)
   estimatedStart String?
   estimatedEnd   String?
+  doneNote       String?
+  mood           String?
   timeEntries    TimeEntry[]
   todos          TodoItem[]
 
@@ -134,6 +138,9 @@ model Task {
   order          Int        @default(0)
   estimatedStart String?
   estimatedEnd   String?
+  doneNote       String?
+  mood           String?
+  timeEntries    TimeEntry[]
   todos          TodoItem[]
 
   @@map("tasks")
