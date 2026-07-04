@@ -28,6 +28,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
     if (body.doneNote !== undefined) data.doneNote = body.doneNote || null;
     if (body.mood !== undefined) data.mood = body.mood || null;
+    if (body.actualMinutes !== undefined) data.actualMinutes = body.actualMinutes || 0;
     const updated = await prisma.idea.update({
       where: { id },
       data,

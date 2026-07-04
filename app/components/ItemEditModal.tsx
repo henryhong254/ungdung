@@ -16,6 +16,7 @@ export interface EditableItem {
   estimatedEnd?: string | null;
   doneNote?: string | null;
   mood?: string | null;
+  actualMinutes?: number;
   _type: "idea" | "task";
 }
 
@@ -39,7 +40,7 @@ interface ItemEditModalProps {
   timer: TimerState;
   onClose: () => void;
   onSave: (data: { title: string; description: string | null; workType: string | null; assignedToId: string | null; estimatedStart?: string | null; estimatedEnd?: string | null }) => Promise<void>;
-  onSaveCheckout: (data: { doneNote: string | null; mood: string | null }) => Promise<void>;
+  onSaveCheckout: (data: { doneNote?: string | null; mood?: string | null; actualMinutes?: number }) => Promise<void>;
   onDelete: () => Promise<void>;
   onToggleDone: () => void;
   onStartTimer: (workType: string, ideaId?: string, title?: string, taskId?: string) => void;
@@ -49,6 +50,14 @@ interface ItemEditModalProps {
 function fmtTimer(s: number) {
   const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
+}
+
+function fmtDuration(min: number) {
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  if (h === 0) return `${m}p`;
+  if (m === 0) return `${h}g`;
+  return `${h}g ${m}p`;
 }
 
 export default function ItemEditModal({
@@ -77,10 +86,25 @@ export default function ItemEditModal({
     setEditingCheckout(false);
   }
 
+  // Tổng thời gian đã làm: tự cộng khi dừng bấm giờ, nhưng vẫn sửa tay được
+  const [editingTime, setEditingTime] = useState(false);
+  const [timeDraft, setTimeDraft] = useState(String(item.actualMinutes ?? 0));
+  const [savingTime, setSavingTime] = useState(false);
+
+  async function saveTime() {
+    const minutes = Math.max(0, parseInt(timeDraft, 10) || 0);
+    setSavingTime(true);
+    await onSaveCheckout({ actualMinutes: minutes });
+    setSavingTime(false);
+    setEditingTime(false);
+  }
+
   // Todo list (chỉ cho task)
   const [todos, setTodos] = useState<TodoItem[]>([]);
   const [newTodo, setNewTodo] = useState("");
   const [addingTodo, setAddingTodo] = useState(false);
+  const [editingTodoId, setEditingTodoId] = useState<string | null>(null);
+  const [editingTodoTitle, setEditingTodoTitle] = useState("");
 
   useEffect(() => {
     const endpoint = item._type === "task" ? `/api/tasks/${item.id}/todos` : `/api/ideas/${item.id}/todos`;
@@ -132,6 +156,23 @@ export default function ItemEditModal({
     const base = item._type === "task" ? `/api/tasks/${item.id}/todos` : `/api/ideas/${item.id}/todos`;
     await api(`${base}/${todoId}`, { method: "DELETE" });
     setTodos(prev => prev.filter(t => t.id !== todoId));
+  }
+
+  function startEditTodo(todo: TodoItem) {
+    setEditingTodoId(todo.id);
+    setEditingTodoTitle(todo.title);
+  }
+
+  async function saveEditTodo() {
+    if (!editingTodoId || !editingTodoTitle.trim()) return;
+    const base = item._type === "task" ? `/api/tasks/${item.id}/todos` : `/api/ideas/${item.id}/todos`;
+    const res = await api(`${base}/${editingTodoId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: editingTodoTitle.trim() }),
+    });
+    if (res.ok) setTodos(prev => prev.map(t => t.id === editingTodoId ? { ...t, title: editingTodoTitle.trim() } : t));
+    setEditingTodoId(null);
   }
 
   const doneCount = todos.filter(t => t.done).length;
@@ -265,21 +306,43 @@ export default function ItemEditModal({
             <div className="space-y-1">
               {todos.map(todo => (
                 <div key={todo.id} className="flex items-center gap-2 group">
-                  <button
-                    onClick={() => toggleTodo(todo)}
-                    className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${todo.done ? "bg-green-500 border-green-500" : "border-gray-300 hover:border-green-400"}`}
-                  >
-                    {todo.done && <span className="text-white text-[10px] font-bold">✓</span>}
-                  </button>
-                  <span className={`flex-1 text-sm ${todo.done ? "line-through text-gray-400" : "text-gray-700"}`}>
-                    {todo.title}
-                  </span>
-                  <button
-                    onClick={() => deleteTodo(todo.id)}
-                    className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 text-xs w-5 h-5 flex items-center justify-center transition-opacity"
-                  >
-                    ✕
-                  </button>
+                  {editingTodoId === todo.id ? (
+                    <>
+                      <input
+                        autoFocus
+                        className="flex-1 border border-blue-300 rounded-lg px-2 py-1 text-sm focus:outline-none"
+                        value={editingTodoTitle}
+                        onChange={e => setEditingTodoTitle(e.target.value)}
+                        onKeyDown={e => { if (e.key === "Enter") saveEditTodo(); if (e.key === "Escape") setEditingTodoId(null); }}
+                      />
+                      <button onClick={saveEditTodo} className="text-xs text-blue-500 hover:underline shrink-0 px-1">Lưu</button>
+                      <button onClick={() => setEditingTodoId(null)} className="text-xs text-gray-400 hover:underline shrink-0 px-1">Hủy</button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => toggleTodo(todo)}
+                        className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${todo.done ? "bg-green-500 border-green-500" : "border-gray-300 hover:border-green-400"}`}
+                      >
+                        {todo.done && <span className="text-white text-[10px] font-bold">✓</span>}
+                      </button>
+                      <span className={`flex-1 text-sm ${todo.done ? "line-through text-gray-400" : "text-gray-700"}`}>
+                        {todo.title}
+                      </span>
+                      <button
+                        onClick={() => startEditTodo(todo)}
+                        className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-blue-500 text-xs w-5 h-5 flex items-center justify-center transition-opacity shrink-0"
+                      >
+                        ✎
+                      </button>
+                      <button
+                        onClick={() => deleteTodo(todo.id)}
+                        className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 text-xs w-5 h-5 flex items-center justify-center transition-opacity shrink-0"
+                      >
+                        ✕
+                      </button>
+                    </>
+                  )}
                 </div>
               ))}
             </div>
@@ -369,6 +432,41 @@ export default function ItemEditModal({
                 <p className="text-sm text-gray-700 whitespace-pre-wrap">{item.mood || <span className="text-gray-300">Chưa có</span>}</p>
               </div>
             </div>
+          )}
+        </div>
+
+        {/* Tổng thời gian đã làm: tự cộng dồn khi dừng bấm giờ, sửa tay được */}
+        <div className="border-t border-gray-100 pt-3">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold text-gray-600">⏱ Tổng thời gian đã làm</p>
+            {!editingTime && (
+              <button
+                type="button"
+                onClick={() => { setTimeDraft(String(item.actualMinutes ?? 0)); setEditingTime(true); }}
+                className="text-xs text-blue-500 hover:underline shrink-0"
+              >
+                ✎ Sửa
+              </button>
+            )}
+          </div>
+          {editingTime ? (
+            <div className="flex items-center gap-2 mt-1">
+              <input
+                type="number"
+                min={0}
+                autoFocus
+                className="w-24 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-400"
+                value={timeDraft}
+                onChange={e => setTimeDraft(e.target.value)}
+              />
+              <span className="text-xs text-gray-400">phút ({fmtDuration(Math.max(0, parseInt(timeDraft, 10) || 0))})</span>
+              <button type="button" onClick={() => setEditingTime(false)} className="text-xs text-gray-500 hover:underline ml-auto">Hủy</button>
+              <button type="button" onClick={saveTime} disabled={savingTime} className="text-xs text-blue-600 font-medium hover:underline disabled:opacity-50">
+                {savingTime ? "Đang lưu..." : "Lưu"}
+              </button>
+            </div>
+          ) : (
+            <p className="text-sm text-gray-700 mt-1">{fmtDuration(item.actualMinutes ?? 0)}</p>
           )}
         </div>
 

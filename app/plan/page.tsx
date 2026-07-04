@@ -16,7 +16,7 @@ interface Idea {
   scheduledFor: string | null; done: boolean;
   assignedTo: User | null; order: number;
   estimatedStart?: string | null; estimatedEnd?: string | null;
-  doneNote?: string | null; mood?: string | null;
+  doneNote?: string | null; mood?: string | null; actualMinutes?: number;
 }
 
 interface Task {
@@ -24,7 +24,7 @@ interface Task {
   workType: string | null; scheduledFor: string | null;
   done: boolean; assignedTo: User | null; order: number;
   estimatedStart?: string | null; estimatedEnd?: string | null;
-  doneNote?: string | null; mood?: string | null;
+  doneNote?: string | null; mood?: string | null; actualMinutes?: number;
 }
 
 function getWeekDays(offset = 0) {
@@ -40,6 +40,13 @@ function dayLabel(d: Date) {
   return d.toLocaleDateString("vi-VN", { weekday: "short", day: "numeric", month: "numeric" });
 }
 function isToday(d: Date) { return isoDate(d) === isoDate(new Date()); }
+function fmtDuration(min: number) {
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  if (h === 0) return `${m}p`;
+  if (m === 0) return `${h}g`;
+  return `${h}g ${m}p`;
+}
 const wt = (key: string | null) => key ? WORK_TYPE_COLORS[key] : null;
 
 // ---- Droppable IDs ----
@@ -1019,6 +1026,7 @@ function IdeaCard({ idea, isExpert, onClick, onToggle, onStartTimer, onStopTimer
           <p className={`text-xs font-medium leading-tight ${idea.done ? "line-through text-gray-400" : "text-gray-800"}`}>{idea.title}</p>
           {!compact && idea.description && <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{idea.description}</p>}
           {idea.assignedTo && <p className="text-xs text-amber-500 mt-0.5">{idea.assignedTo.name.split(" ").pop()}</p>}
+          {!!idea.actualMinutes && <p className="text-[10px] text-gray-400 mt-0.5">⏱ {fmtDuration(idea.actualMinutes)}</p>}
         </div>
         {onStartTimer && !isTimingThis && !idea.done && (
           <button
@@ -1082,6 +1090,7 @@ function TaskCard({ task, isExpert, onClick, onToggle, timerRunning, timerElapse
           )}
           <p className={`text-xs leading-tight ${task.done ? "line-through text-gray-400" : "text-gray-700"}`}>{task.title}</p>
           {task.assignedTo && <p className="text-xs text-blue-500 mt-0.5">{task.assignedTo.name.split(" ").pop()}</p>}
+          {!!task.actualMinutes && <p className="text-[10px] text-gray-400 mt-0.5">⏱ {fmtDuration(task.actualMinutes)}</p>}
         </div>
         {onStartTimer && !isTimingThis && !task.done && (
           <button
