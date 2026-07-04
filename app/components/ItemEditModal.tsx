@@ -39,6 +39,7 @@ interface ItemEditModalProps {
   timer: TimerState;
   onClose: () => void;
   onSave: (data: { title: string; description: string | null; workType: string | null; assignedToId: string | null; estimatedStart?: string | null; estimatedEnd?: string | null }) => Promise<void>;
+  onSaveCheckout: (data: { doneNote: string | null; mood: string | null }) => Promise<void>;
   onDelete: () => Promise<void>;
   onToggleDone: () => void;
   onStartTimer: (workType: string, ideaId?: string, title?: string, taskId?: string) => void;
@@ -52,7 +53,7 @@ function fmtTimer(s: number) {
 
 export default function ItemEditModal({
   item, users, isExpert, timer,
-  onClose, onSave, onDelete, onToggleDone, onStartTimer, onStopTimer,
+  onClose, onSave, onSaveCheckout, onDelete, onToggleDone, onStartTimer, onStopTimer,
 }: ItemEditModalProps) {
   const [form, setForm] = useState({
     title: item.title,
@@ -63,6 +64,18 @@ export default function ItemEditModal({
     estimatedEnd: item.estimatedEnd || "",
   });
   const [saving, setSaving] = useState(false);
+
+  // Ghi chú lúc dừng giờ + check-out cảm xúc: luôn hiện, có thể sửa trực tiếp bất cứ lúc nào
+  const [editingCheckout, setEditingCheckout] = useState(false);
+  const [checkoutDraft, setCheckoutDraft] = useState({ note: item.doneNote || "", mood: item.mood || "" });
+  const [savingCheckout, setSavingCheckout] = useState(false);
+
+  async function saveCheckout() {
+    setSavingCheckout(true);
+    await onSaveCheckout({ doneNote: checkoutDraft.note || null, mood: checkoutDraft.mood || null });
+    setSavingCheckout(false);
+    setEditingCheckout(false);
+  }
 
   // Todo list (chỉ cho task)
   const [todos, setTodos] = useState<TodoItem[]>([]);
@@ -291,23 +304,73 @@ export default function ItemEditModal({
           </div>
         )}
 
-        {/* Checkout sau khi dừng bấm giờ */}
-        {(item.doneNote || item.mood) && (
-          <div className="border-t border-gray-100 pt-3 space-y-2">
-            {item.doneNote && (
-              <div>
-                <p className="text-xs font-semibold text-gray-500 mb-0.5">📝 Ghi chú lúc dừng giờ</p>
-                <p className="text-sm text-gray-700 whitespace-pre-wrap">{item.doneNote}</p>
-              </div>
-            )}
-            {item.mood && (
-              <div>
-                <p className="text-xs font-semibold text-gray-500 mb-0.5">🙂 Cảm xúc sau khi làm</p>
-                <p className="text-sm text-gray-700 whitespace-pre-wrap">{item.mood}</p>
-              </div>
+        {/* Ghi chú lúc dừng giờ + check-out cảm xúc: luôn hiện, điền trực tiếp hoặc qua popup dừng bấm giờ */}
+        <div className="border-t border-gray-100 pt-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold text-gray-600">📝 Ghi chú & cảm xúc</p>
+            {!editingCheckout && (
+              <button
+                type="button"
+                onClick={() => { setCheckoutDraft({ note: item.doneNote || "", mood: item.mood || "" }); setEditingCheckout(true); }}
+                className="text-xs text-blue-500 hover:underline shrink-0"
+              >
+                ✎ Sửa
+              </button>
             )}
           </div>
-        )}
+
+          {editingCheckout ? (
+            <div className="space-y-2">
+              <div>
+                <label className="text-xs text-gray-500 block mb-1">Ghi chú bạn đã làm gì</label>
+                <textarea
+                  rows={2}
+                  autoFocus
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm resize-none focus:outline-none focus:border-blue-400"
+                  value={checkoutDraft.note}
+                  onChange={e => setCheckoutDraft({ ...checkoutDraft, note: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 block mb-1">Check-out cảm xúc của bạn sau khi xong task là?</label>
+                <textarea
+                  rows={2}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm resize-none focus:outline-none focus:border-blue-400"
+                  value={checkoutDraft.mood}
+                  onChange={e => setCheckoutDraft({ ...checkoutDraft, mood: e.target.value })}
+                />
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingCheckout(false)}
+                  className="flex-1 border border-gray-200 rounded-xl py-2 text-sm font-medium text-gray-600 hover:bg-gray-50"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="button"
+                  onClick={saveCheckout}
+                  disabled={savingCheckout}
+                  className="flex-1 bg-blue-600 text-white rounded-xl py-2 text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {savingCheckout ? "Đang lưu..." : "Lưu"}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div>
+                <p className="text-xs text-gray-400 mb-0.5">Ghi chú bạn đã làm gì</p>
+                <p className="text-sm text-gray-700 whitespace-pre-wrap">{item.doneNote || <span className="text-gray-300">Chưa có ghi chú</span>}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-400 mb-0.5">Cảm xúc sau khi làm</p>
+                <p className="text-sm text-gray-700 whitespace-pre-wrap">{item.mood || <span className="text-gray-300">Chưa có</span>}</p>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Timer */}
         {!item.done && (

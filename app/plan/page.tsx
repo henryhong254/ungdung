@@ -850,6 +850,17 @@ export default function PlanPage() {
             setEditItem(null); setEditingIdea(null); setEditingTask(null);
             load();
           }}
+          onSaveCheckout={async (data) => {
+            const endpoint = editItem._type === "idea"
+              ? `/api/ideas/${editItem.id}`
+              : `/api/tasks/${editItem.id}`;
+            const res = await api(endpoint, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+            if (res.ok) {
+              const updated = await res.json();
+              setEditItem({ ...updated, _type: editItem._type });
+            }
+            load();
+          }}
           onDelete={async () => {
             if (editItem._type === "idea") await deleteIdea(editItem.id);
             else await deleteTask(editItem.id);

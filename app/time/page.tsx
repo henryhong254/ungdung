@@ -325,6 +325,15 @@ export default function TodayPage() {
             setDetailItem(null);
             load();
           }}
+          onSaveCheckout={async (data) => {
+            const endpoint = detailItem._type === "idea" ? `/api/ideas/${detailItem.id}` : `/api/tasks/${detailItem.id}`;
+            const res = await api(endpoint, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+            if (res.ok) {
+              const updated = await res.json();
+              setDetailItem({ ...updated, _type: detailItem._type });
+            }
+            load();
+          }}
           onDelete={async () => {
             const endpoint = detailItem._type === "idea" ? `/api/ideas/${detailItem.id}` : `/api/tasks/${detailItem.id}`;
             await api(endpoint, { method: "DELETE" });
