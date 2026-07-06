@@ -169,7 +169,10 @@ export default function PlanPage() {
 
   useEffect(() => {
     if (timerRunning) {
-      timerInterval.current = setInterval(() => setTimerElapsed(e => e + 1), 1000);
+      const startedAt = new Date(timerRunning.startedAt).getTime();
+      timerInterval.current = setInterval(() => {
+        setTimerElapsed(Math.floor((Date.now() - startedAt) / 1000));
+      }, 1000);
     } else {
       if (timerInterval.current) clearInterval(timerInterval.current);
     }

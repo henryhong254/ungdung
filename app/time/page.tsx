@@ -124,7 +124,10 @@ export default function TodayPage() {
 
   useEffect(() => {
     if (running) {
-      intervalRef.current = setInterval(() => setElapsed(e => e + 1), 1000);
+      const startedAt = new Date(running.startedAt).getTime();
+      intervalRef.current = setInterval(() => {
+        setElapsed(Math.floor((Date.now() - startedAt) / 1000));
+      }, 1000);
     } else {
       if (intervalRef.current) clearInterval(intervalRef.current);
     }
