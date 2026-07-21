@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
       product: body.product,
       workType: body.workType,
       note: body.note || null,
-      startedAt: new Date(),
+      startedAt: body.clientNow ? new Date(body.clientNow) : new Date(),
     },
     include: { idea: { select: { id: true, title: true } }, task: { select: { id: true, title: true } } },
   });

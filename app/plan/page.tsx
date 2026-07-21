@@ -156,7 +156,7 @@ export default function PlanPage() {
         const active = data.find((e: any) => !e.stoppedAt);
         if (active) {
           setTimerRunning(active);
-          setTimerElapsed(Math.floor((Date.now() - new Date(active.startedAt).getTime()) / 1000));
+          setTimerElapsed(Math.max(0, Math.floor((Date.now() - new Date(active.startedAt).getTime()) / 1000)));
         } else {
           setTimerRunning(null);
           setTimerElapsed(0);
@@ -171,7 +171,7 @@ export default function PlanPage() {
     if (timerRunning) {
       const startedAt = new Date(timerRunning.startedAt).getTime();
       timerInterval.current = setInterval(() => {
-        setTimerElapsed(Math.floor((Date.now() - startedAt) / 1000));
+        setTimerElapsed(Math.max(0, Math.floor((Date.now() - startedAt) / 1000)));
       }, 1000);
     } else {
       if (timerInterval.current) clearInterval(timerInterval.current);
@@ -194,7 +194,7 @@ export default function PlanPage() {
     requestNotificationPermission();
     await api("/api/time", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ product: timerForm.product, workType: workType || timerForm.workType || WORK_TYPES[0].value, note: timerForm.note || null }),
+      body: JSON.stringify({ product: timerForm.product, workType: workType || timerForm.workType || WORK_TYPES[0].value, note: timerForm.note || null, clientNow: new Date().toISOString() }),
     });
     setShowTimerForm(false);
     setTimerElapsed(0);
@@ -203,7 +203,7 @@ export default function PlanPage() {
 
   async function stopTimer() {
     if (!timerRunning) return;
-    await api(`/api/time/${timerRunning.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) });
+    await api(`/api/time/${timerRunning.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ stoppedAt: new Date().toISOString() }) });
     const finished = timerRunning;
     loadTimer();
     if (finished.ideaId) {
@@ -240,7 +240,7 @@ export default function PlanPage() {
     requestNotificationPermission();
     // Stop existing timer first
     if (timerRunning) {
-      await api(`/api/time/${timerRunning.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) });
+      await api(`/api/time/${timerRunning.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ stoppedAt: new Date().toISOString() }) });
     }
     const wt = workType || WORK_TYPES[0].value;
     const res = await api("/api/time", {
@@ -251,6 +251,7 @@ export default function PlanPage() {
         note: note || timerForm.note || null,
         ideaId: ideaId || null,
         taskId: taskId || null,
+        clientNow: new Date().toISOString(),
       }),
     });
     if (!res.ok) {

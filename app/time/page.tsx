@@ -105,7 +105,7 @@ export default function TodayPage() {
       const active = allEntries.find((en: any) => !en.stoppedAt);
       if (active) {
         setRunning(active);
-        setElapsed(Math.floor((Date.now() - new Date(active.startedAt).getTime()) / 1000));
+        setElapsed(Math.max(0, Math.floor((Date.now() - new Date(active.startedAt).getTime()) / 1000)));
       } else {
         setRunning(null);
         setElapsed(0);
@@ -126,7 +126,7 @@ export default function TodayPage() {
     if (running) {
       const startedAt = new Date(running.startedAt).getTime();
       intervalRef.current = setInterval(() => {
-        setElapsed(Math.floor((Date.now() - startedAt) / 1000));
+        setElapsed(Math.max(0, Math.floor((Date.now() - startedAt) / 1000)));
       }, 1000);
     } else {
       if (intervalRef.current) clearInterval(intervalRef.current);
@@ -137,7 +137,7 @@ export default function TodayPage() {
   async function startTimer(workType: string, ideaId?: string, title?: string) {
     if (running) {
       await api(`/api/time/${running.id}`, {
-        method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}),
+        method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ stoppedAt: new Date().toISOString() }),
       });
     }
     await api("/api/time", {
@@ -147,6 +147,7 @@ export default function TodayPage() {
         workType: workType || WORK_TYPES[0].value,
         ideaId: ideaId || null,
         note: title || null,
+        clientNow: new Date().toISOString(),
       }),
     });
     setElapsed(0);
@@ -164,7 +165,7 @@ export default function TodayPage() {
     if (!stoppingId) return;
     await api(`/api/time/${stoppingId}`, {
       method: "PATCH", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ note: stopNote || undefined }),
+      body: JSON.stringify({ note: stopNote || undefined, stoppedAt: new Date().toISOString() }),
     });
     setShowStopForm(false);
     setStopNote("");
