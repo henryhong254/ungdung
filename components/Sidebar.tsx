@@ -11,6 +11,7 @@ const nav = [
   { href: "/time", label: "Hôm Nay", icon: "📅", roles: ["expert", "assistant"] },
   { href: "/time/report", label: "Báo cáo", icon: "📈", roles: ["expert"] },
   { href: "/team", label: "Team", icon: "🔑", roles: ["expert"] },
+  { href: "/settings", label: "Cài đặt", icon: "⚙️", roles: ["expert", "assistant"] },
 ];
 
 export default function Sidebar() {
