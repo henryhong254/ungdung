@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import webpush from "web-push";
 
-webpush.setVapidDetails(
-  "mailto:contact@foundersnorth.com",
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "",
-  process.env.VAPID_PRIVATE_KEY || ""
-);
+const pubKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+const privKey = process.env.VAPID_PRIVATE_KEY;
+
+if (pubKey && privKey) {
+  webpush.setVapidDetails("mailto:contact@foundersnorth.com", pubKey, privKey);
+}
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
 
