@@ -39,7 +39,7 @@ function isoDate(d: Date) { return d.toISOString().slice(0, 10); }
 function dayLabel(d: Date) {
   return d.toLocaleDateString("vi-VN", { weekday: "short", day: "numeric", month: "numeric" });
 }
-function isToday(d: Date) { return isoDate(d) === isoDate(new Date()); }
+function checkIsToday(d: Date, todayStr: string) { return todayStr !== "" && isoDate(d) === todayStr; }
 function fmtDuration(min: number) {
   const h = Math.floor(min / 60);
   const m = min % 60;
@@ -62,6 +62,9 @@ export default function PlanPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [weekOffset, setWeekOffset] = useState(0);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+  const todayStr = mounted ? isoDate(new Date()) : "";
   const weekDays = getWeekDays(weekOffset);
 
   const currentUserId = (session?.user as any)?.id || "";
@@ -650,9 +653,9 @@ export default function PlanPage() {
               const dayIdeas = ideasForDay(day);
               const dayTasks = tasksForDay(day);
               return (
-                <div key={dateStr} className={`${isToday(day) ? "flex-[1.5]" : "flex-1"} min-w-[140px] md:min-w-32 flex flex-col bg-white rounded-xl border border-gray-200 overflow-hidden`}>
-                  <div className={`px-3 py-2 border-b border-gray-100 shrink-0 ${isToday(day) ? "bg-blue-600" : "bg-gray-50"}`}>
-                    <p className={`text-xs font-medium text-center ${isToday(day) ? "text-white" : "text-gray-600"}`}>{dayLabel(day)}</p>
+                <div key={dateStr} className={`${checkIsToday(day, todayStr) ? "flex-[1.5]" : "flex-1"} min-w-[140px] md:min-w-32 flex flex-col bg-white rounded-xl border border-gray-200 overflow-hidden`}>
+                  <div className={`px-3 py-2 border-b border-gray-100 shrink-0 ${checkIsToday(day, todayStr) ? "bg-blue-600" : "bg-gray-50"}`}>
+                    <p className={`text-xs font-medium text-center ${checkIsToday(day, todayStr) ? "text-white" : "text-gray-600"}`}>{dayLabel(day)}</p>
                   </div>
 
                   <Droppable droppableId={`day-${dateStr}`}>
