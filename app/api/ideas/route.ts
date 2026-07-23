@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
         scheduledFor: unscheduled
           ? null
           : from || to
-          ? { gte: from ? new Date(from) : undefined, lt: to ? new Date(to) : undefined }
+          ? { gte: from ? new Date(from) : undefined, lte: to ? new Date(to) : undefined }
           : undefined,
       },
       include: { assignedTo: { select: { id: true, name: true } } },

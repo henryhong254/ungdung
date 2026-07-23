@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
           ? null
           : {
               gte: from ? new Date(from) : undefined,
-              lt: to ? new Date(to) : undefined,
+              lte: to ? new Date(to) : undefined,
             },
       },
       include: {
