@@ -39,7 +39,7 @@ interface ItemEditModalProps {
   isExpert: boolean;
   timer: TimerState;
   onClose: () => void;
-  onSave: (data: { title: string; description: string | null; workType: string | null; assignedToId: string | null; estimatedStart?: string | null; estimatedEnd?: string | null }) => Promise<void>;
+  onSave: (data: { title: string; description: string | null; workType: string | null; assignedToId: string | null; estimatedStart?: string | null; estimatedEnd?: string | null; doneNote?: string | null; mood?: string | null; actualMinutes?: number }) => Promise<void>;
   onSaveCheckout: (data: { doneNote?: string | null; mood?: string | null; actualMinutes?: number }) => Promise<void>;
   onDelete: () => Promise<void>;
   onToggleDone: () => void;
@@ -114,6 +114,7 @@ export default function ItemEditModal({
   async function handleSave() {
     if (!form.title.trim()) return;
     setSaving(true);
+    const minutes = Math.max(0, parseInt(timeDraft, 10) || 0);
     await onSave({
       title: form.title,
       description: form.description || null,
@@ -121,6 +122,9 @@ export default function ItemEditModal({
       assignedToId: form.assignedToId || null,
       estimatedStart: form.estimatedStart || null,
       estimatedEnd: form.estimatedEnd || null,
+      doneNote: editingCheckout ? (checkoutDraft.note || null) : undefined,
+      mood: editingCheckout ? (checkoutDraft.mood || null) : undefined,
+      actualMinutes: editingTime ? minutes : undefined,
     });
     setSaving(false);
   }
